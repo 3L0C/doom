@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: forr
+# uuid: forr
+# key: forr
+# condition: t
+# --
+for (${1:int i = 0}; ${2:}; ${3:i++})
+{
+    $0
+}

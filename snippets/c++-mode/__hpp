@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# group: file templates
+# uuid: __hpp
+# key: __hpp
+# condition: t
+# --
+#pragma once
+
+
+$0

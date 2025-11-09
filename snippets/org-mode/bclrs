@@ -1,0 +1,13 @@
+# -*- mode: snippet -*-
+# name: bclrs
+# uuid: bclrs
+# key: bclrs
+# condition: t
+# --
+#+filetags: :computer_science:algorithms:clrs:
+#+options: toc
+#+startup: latexpreview
+#+auto_tangle: nil
+
+* Table of Contents :toc:
+$0

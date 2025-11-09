@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# name: main
+# uuid: main
+# key: main
+# condition: t
+# --
+int
+main(${1:int argc, char **argv})
+{
+    $0
+}

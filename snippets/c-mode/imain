@@ -1,0 +1,13 @@
+# -*- mode: snippet -*-
+# name: imain
+# uuid: imain
+# key: imain
+# condition: t
+# --
+int
+main(${1:int argc, char *argv[]})
+{
+    $0
+
+    return 0;
+}

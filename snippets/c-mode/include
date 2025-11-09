@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: include
+# uuid: inc<
+# key: inc<
+# condition: t
+# --
+#include <${1:stdio.h}>
+$0

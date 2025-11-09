@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: lreq
+# uuid: lreq
+# key: lreq
+# condition: t
+# --
+local $1 = require '$2' $0

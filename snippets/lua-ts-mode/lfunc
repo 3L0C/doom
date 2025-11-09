@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: lfunc
+# uuid: lfunc
+# key: lfunc
+# condition: t
+# --
+local function $1($2)
+    $0
+end

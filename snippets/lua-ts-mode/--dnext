@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: dnext
+# uuid: dnext
+# key: dnext
+# condition: t
+# --
+---@diagnostic disable-next-line $0

@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: namespace
+# uuid: namespace
+# key: namespace
+# condition: t
+# --
+namespace ${1}
+{
+    $0
+} /* $1 */

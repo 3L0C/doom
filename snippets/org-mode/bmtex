@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# name: bmtex
+# uuid: bmtex
+# key: bmtex
+# condition: t
+# --
+\left [
+\begin{matrix}
+$0
+\end{matrix}
+\right ]

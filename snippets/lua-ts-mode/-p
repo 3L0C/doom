@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: --p
+# uuid: --p
+# key: --p
+# condition: t
+# --
+---@param ${1:var} ${2:type} $0

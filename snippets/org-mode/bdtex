@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: bdtex
+# uuid: bdtex
+# key: bdtex
+# condition: t
+# --
+\begin{document}
+$0
+\end{document}

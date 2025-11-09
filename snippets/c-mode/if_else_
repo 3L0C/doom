@@ -1,0 +1,14 @@
+# -*- mode: snippet -*-
+# name: if_else_
+# uuid: if_else_
+# key: if_else_
+# condition: t
+# --
+if (${1:condition})
+{
+    $0
+}
+else
+{
+
+}

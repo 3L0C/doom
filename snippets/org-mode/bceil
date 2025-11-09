@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: bceil
+# uuid: bceil
+# key: bceil
+# condition: t
+# --
+\lceil $1 \rceil $0

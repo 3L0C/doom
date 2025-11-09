@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: bfloor
+# uuid: bfloor
+# key: bfloor
+# condition: t
+# --
+\lfloor $1 \rfloor$0

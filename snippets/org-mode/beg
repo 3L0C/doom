@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: beg
+# uuid: beg
+# key: beg
+# condition: t
+# --
+#+begin_${1:example} $2
+$0
+#+end_$1

@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: _switch
+# uuid: _switch
+# key: _switch
+# condition: t
+# --
+switch ($1)
+{
+case $2: $0
+}

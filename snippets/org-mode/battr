@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: bwattr
+# uuid: bwattr
+# key: bwattr
+# condition: t
+# --
+#+attr_org: :width $0px

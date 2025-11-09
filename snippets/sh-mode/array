@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: array
+# uuid: rearray
+# key: rearray
+# condition: t
+# --
+readarray -t ${1:VAR} < <(${2:command} ; printf '\0')

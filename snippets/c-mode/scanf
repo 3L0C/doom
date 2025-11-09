@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: scanf
+# uuid: s
+# key: s
+# condition: t
+# --
+scanf("${1:format}"${2:, $3});

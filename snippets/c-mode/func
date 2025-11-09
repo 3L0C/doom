@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# name: funcc
+# uuid: funcc
+# key: funcc
+# condition: t
+# --
+${1:static void}
+${2:funcName}(${3:params})
+{
+    $0
+} /* $2 */

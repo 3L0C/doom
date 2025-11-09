@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: mreq
+# uuid: mreq
+# key: mreq
+# condition: t
+# --
+local $1 = require 'modules.$2' $0

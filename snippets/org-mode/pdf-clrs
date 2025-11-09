@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: pdf-clrs
+# uuid: pdf-clrs
+# key: pdf-clrs
+# condition: t
+# --
+[[pdf:~/documents/books/coding/Algorithms/introduction-to-algorithms-4th-edition.pdf#page=$1][CLRS page $1]$0.

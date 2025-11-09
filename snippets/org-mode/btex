@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: btex
+# uuid: btex
+# key: btex
+# condition: t
+# --
+\begin{${1:equation*}}
+$0
+\end{$1}

@@ -1,0 +1,952 @@
+(load! "funcs.el")
+
+;; (use-package! emojify
+;;   :hook (after-init . global-emojify-mode))
+
+(defvar cb/pdf-viewer "sioyek"
+  "The PDF viewer to use.")
+(defvar cb/pdf-viewer-page-argument "--page"
+  "Argument for specifying the page number to the pdf viewer")
+(defvar cb/pdf-viewer-extra-arguments (list "--new-window")
+  "Extra arguments to pass the the pdf viewer")
+(defvar cb/pdf-directories '("~/documents/books/")
+  "List of directories to search for PDF files.")
+(defvar cb/pdf-files-cache nil
+  "Cache of PDF files found in `cb/pdf-directories`.")
+;; (run-with-idle-timer 600 t #'cb/update-pdf-files-cache)
+(after! org
+  (org-link-set-parameters "pdf" :follow #'org-pdf-link-follow-link)
+  (setq! org-hide-emphasis-markers t
+         org-startup-with-inline-images t
+         ;; org-pretty-entities t
+         ;; org-image-actual-width t
+         org-indent-indentation-per-level 1
+         org-format-latex-options (plist-put org-format-latex-options
+                                             :scale 2.0)))
+
+(use-package! org-auto-tangle
+  :defer t
+  :hook (org-mode . org-auto-tangle-mode)
+  :config
+  (setq org-auto-tangle-default t))
+
+; Meta-Llama-3-8B-Instruct.Q4_0.gguf
+;; OPTIONAL configuration
+;; (setq
+;;  gptel-max-tokens 4096
+;;  gptel-model "Meta-Llama-3-8B-Instruct.Q4_0.gguf"
+;;  gptel-backend (gptel-make-gpt4all "GPT4All"
+;;                  :protocol "http"
+;;                  :host "localhost:4891"
+;;                  :models '("Meta-Llama-3-8B-Instruct.Q4_0.gguf"
+;;                            "Nous-Hermes-2-Mistral-7B-DPO.Q4_0.gguf"
+;;                            "gpt4all-falcon-newbpe-q4_0.gguf")))
+
+(after! (mixed-pitch writeroom-mode)
+  (setq +zen-text-scale 1))
+
+;; (use-package hyprlang-ts-mode
+;;   :custom
+;;   (hyprlang-ts-mode-indent-offset 4))
+
+(global-auto-revert-mode 1)
+(setq global-auto-revert-non-file-buffers t)
+
+(add-hook! 'c-mode-common-hook
+           (modify-syntax-entry ?_ "w"))
+(setq c-tab-always-indent nil)
+(defconst my-c++-style
+  '("bsd"
+    (c-basic-offset . 4)
+    (c-hanging-braces-alist . ((arglist-close before)))
+    (c-offsets-alist . ((namespace-open . 0)
+                        (innamespace . 0)
+                        (label . -)
+                        (access-label . -)
+                        (inclass . +)
+                        (substatement-label . 0)
+                        (case-lable . 0)
+                        (arglist-intro . +)
+                        ;; (arglist-cont . +)
+                        ;; (arglist-cont-nonempty . +)
+                        (arglist-close . 0)))))
+(defun my-c++-mode-hook ()
+  (c-add-style "my-c++-style" my-c++-style)
+  (c-set-style "my-c++-style")
+  (setq! c-default-style "my-c++-style"
+         c-ts-mode-indent-style 'bsd
+         lsp-ui-sideline-enable t
+         c-basic-offset 4
+         c-ts-mode-indent-offset 4
+         tab-width 4))
+(add-hook! 'c++-mode-hook 'my-c++-mode-hook)
+(c-add-style "my-c++-style" my-c++-style)
+(setq! c-default-style "my-c++-style"
+       c-ts-mode-indent-style 'bsd
+       lsp-ui-sideline-enable t
+       c-basic-offset 4
+       c-ts-mode-indent-offset 4
+       tab-width 4)
+(after! lsp-clangd
+  (setq lsp-clients-clangd-args
+        '("-j=3"
+          "--background-index"
+          "--clang-tidy"
+          "--completion-style=detailed"
+          "--header-insertion=never"
+          "--header-insertion-decorators=0"))
+  (set-lsp-priority! 'clangd 2))
+;; (after! ccls
+;;   (setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
+;;   (set-lsp-priority! 'ccls 1))
+
+;; close dap-output on exit
+(after! dap-mode
+  ;; (add-hook! 'dap-terminated-hook #'debug-cleanup-output)
+  (require 'dap-gdb)
+  (require 'dap-lldb)
+  (require 'dap-cpptools)
+  (require 'dap-gdb-lldb)
+  (add-hook! 'dap-terminated-hook (call-interactively #'hydra-keyboard-quit))
+  (add-hook! 'dap-stopped-hook (call-interactively #'dap-hydra)))
+  ;; (add-hook! 'dap-ui-many-windows-mode-hook (call-interactively (async-shell-command "notify-send hello!" nil))))
+(after! gdb-mi
+  (setq! gdb-restore-window-configuration-after-quit t))
+(after! dap-mode
+  (dap-register-debug-template
+   "GDB::Run::hypr::plugin"
+   (list :type "gdb"
+         :request "launch"
+         :name "GDB::Run::hypr::plugin"
+         ;; :arguments "test"
+         :target "Hyprland"
+         :cwd "${workspaceFolder}/build"))
+  (dap-register-debug-template
+   "GDB::Run::ccss::lexer_test"
+   (list :type "gdb"
+         :request "launch"
+         :name "GDB::Run::ccss::lexer_test"
+         ;; :arguments "test"
+         :target "tests/lexer_test"
+         :cwd "${workspaceFolder}/build"))
+  (dap-register-debug-template
+   "GDB::Run::ccss::parser_test"
+   (list :type "gdb"
+         :request "launch"
+         :name "GDB::Run::ccss::parser_test"
+         ;; :arguments "test"
+         :target "tests/parser_test"
+         :cwd "${workspaceFolder}/build"))
+  (dap-register-debug-template
+   "GDB::Run::wk::circular_includes"
+   (list :type "gdb"
+         :request "launch"
+         :name "GDB::Run::wk::circular_includes"
+         :arguments "--key-chords tests/fixtures/invalid/circular_include_test.wks"
+         :target "./wk"
+         :cwd "${workspaceFolder}"))
+  (dap-register-debug-template
+   "GDB::Run::wk"
+   (list :type "gdb"
+         :request "launch"
+         :name "GDB::Run::wk"
+         :arguments "--debug"
+         :target "./wk"
+         :cwd "${workspaceFolder}"))
+  (dap-register-debug-template
+   "GDB::Run::wk::main.wks"
+   (list :type "gdb"
+         :request "launch"
+         :name "GDB::Run::wk::main.wks"
+         :arguments "--debug --key-chords main.wks"
+         :target "./wk"
+         :cwd "${workspaceFolder}"))
+  (dap-register-debug-template
+   "cpptools::Run"
+   (list :type "cppdbg"
+         :request "launch"
+         :name "cpptools::Run"
+         :args []
+         :MIMode "gdb"
+         :program "${workspaceFolder}/"
+         :cwd     "${workspaceFolder}"))
+  (dap-register-debug-template
+   "cpptools::Run::clox::cli"
+   (list :type "cppdbg"
+         :request "launch"
+         :name "cpptools::Run::clox::cli"
+         :args []
+         :MIMode "gdb"
+         :program "${workspaceFolder}/clox"
+         :cwd "${workspaceFolder}"))
+  (dap-register-debug-template
+   "cpptools::Run::clox::script"
+   (list :type "cppdbg"
+         :request "launch"
+         :name "cpptools::Run::clox::script"
+         :args ["./script.lox"]
+         :MIMode "gdb"
+         :program "${workspaceFolder}/clox"
+         :cwd "${workspaceFolder}"))
+  (dap-register-debug-template
+   "cpptools::Run::wk::args"
+   (list :type "cppdbg"
+         :request "launch"
+         :name "cpptools::Run::wk::args"
+         :args ["--fg"]
+         :MIMode "gdb"
+         :program "${workspaceFolder}/wk"
+         :cwd "${workspaceFolder}"))
+  (dap-register-debug-template
+   "cpptools::Run::wk::main.wks"
+   (list :type "cppdbg"
+         :request "launch"
+         :name "cpptools::Run::wk::main.wks"
+         :args ["--debug" "--key-chords" "./main.wks"]
+         :MIMode "gdb"
+         :program "${workspaceFolder}/wk"
+         :cwd "${workspaceFolder}"))
+  (dap-register-debug-template
+   "cpptools::Run::wk::key-chords"
+   (list :type "cppdbg"
+         :request "launch"
+         :name "cpptools::Run::wk::key-chords"
+         :args ["--debug" "--key-chords" "./examples/key_chords.wks"]
+         :MIMode "gdb"
+         :program "${workspaceFolder}/wk"
+         :cwd "${workspaceFolder}"))
+  (dap-register-debug-template
+   "cpptools::Run::wk::chord-array"
+   (list :type "cppdbg"
+         :request "launch"
+         :name "cpptools::Run::wk::chord-array"
+         :args ["--debug" "--key-chords" "./examples/chord_array_example.wks"]
+         :MIMode "gdb"
+         :program "${workspaceFolder}/wk"
+         :cwd "${workspaceFolder}"))
+  (dap-register-debug-template
+   "cpptools::Run::wk::transpile"
+   (list :type "cppdbg"
+         :request "launch"
+         :name "cpptools::Run::wk::transpile"
+         :args ["./wk" "--debug" "--transpile" "./examples/key_chords.wks"]
+         :MIMode "gdb"
+         ;; :program "${workspaceFolder}/wk"
+         :program "/usr/bin/valgrind"
+         :cwd "${workspaceFolder}"))
+  (dap-register-debug-template
+   "cpptools::Run::wk::main"
+   (list :type "cppdbg"
+         :request "launch"
+         :name "cpptools::Run::wk::main"
+         :args []
+         :MIMode "gdb"
+         :program "${workspaceFolder}/wk"
+         :cwd "${workspaceFolder}")))
+
+(after! (:or nix-mode nix-ts-mode)
+  (add-hook! (nix-mode nix-ts-mode)
+             (setq-local tab-width 2)))
+
+(after! (:or lua-mode lua-ts-mode)
+  (add-hook! '(lua-mode-hook lua-ts-mode-hook)
+    (setq-local corfu-auto-delay 0.2)
+    (setq-local lua-indent-level 4)
+    (setq-local lua-indent-nested-block-content-align nil)))
+
+(after! rjsx-mode
+  (setq! js-indent-level 4))
+
+(setq +doom-dashboard-pwd-policy "~/"
+      fancy-splash-image "~/.config/doom/doom-emacs-dash.png")
+
+(after! org (add-to-list 'org-modules 'ol-info))
+
+(setq delete-by-moving-to-trash t
+      trash-directory "~/.local/share/Trash/files/")
+
+(setq! default-frame-alist '((undecorated . t)
+                             (vertical-scroll-bars . nil)))
+
+(use-package! centered-cursor-mode)
+(after! centered-cursor-mode
+  (add-hook! (prog-mode text-mode conf-mode lsp-mode)
+             :append (centered-cursor-mode)))
+
+(after! spell-fu
+  ;; TODO workround for https://github.com/doomemacs/doomemacs/issues/6246
+  (unless ispell-dictionary
+    (setq ispell-dictionary "en"))
+  (unless (file-exists-p ispell-personal-dictionary)
+    (make-directory (file-name-directory ispell-personal-dictionary) t)
+    (with-temp-file ispell-personal-dictionary
+      (insert (format "personal_ws-1.1 %s 0\n" ispell-dictionary)))))
+
+(add-hook! yaml-mode
+           (spell-fu-mode -1))
+
+(setq! tramp-terminal-type "tramp")
+
+(after! smartparens
+  (show-smartparens-global-mode t))
+
+(setq +word-wrap-extra-indent nil)
+
+;; (add-to-list '+tree-sitter-hl-enabled-modes 'c++-mode t)
+;; (after! tree-sitter
+;;   (global-tree-sitter-mode)
+;;   (setq treesit-language-source-alist
+;;       '((cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+;;         (c "https://github.com/tree-sitter/tree-sitter-c"))))
+;; (setq +tree-sitter-hl-enabled-modes t)
+
+(after! corfu
+  (setq! corfu-preselect 'prompt
+         +corfu-want-ret-to-confirm t
+         corfu-quit-at-boundary 'separator
+         corfu-auto-prefix 2
+         corfu-quit-no-match 'separator
+         ;; cape-file-directory-must-exist t
+         +corfu-want-tab-prefer-navigating-snippets nil
+         ;; +corfu-want-tab-prefer-navigating-org-tables t
+         +corfu-want-minibuffer-completion nil
+         corfu-preview-current 'insert
+         corfu-auto-delay 0.2)
+  (map! :map corfu-map
+        :i "S-SPC" #'corfu-insert-separator))
+;; (map! :after corfu
+;;       :map corfu-map
+;;       :i [tab] #'corfu-next)
+;; (map! :i [tab] (cmds! (and (modulep! :editor snippets)
+;;                            (yas-maybe-expand-abbrev-key-filter 'yas-expand))
+;;                       #'yas-expand
+;;                       (and (bound-and-true-p company-mode)
+;;                            (modulep! :completion company +tng))
+;;                       #'company-indent-or-complete-common
+;;                       (and (bound-and-true-p corfu-mode)
+;;                            (modulep! :completion corfu))
+;;                       #'indent-for-tab-command))
+  ;;        tab-always-indent t
+  ;;        tab-first-completion 'word-or-paren-or-punct)
+  ;; (map! :map corfu-map
+  ;;       :i "TAB" nil
+  ;;       :i "S-TAB" nil))
+        ;; :i "TAB" #'corfu-next
+        ;; :i "S-TAB" #'corfu-previous))
+
+;; (setq company-statistics-mode t)
+;; (setq company-minimum-prefix-length 2
+;;       company-idle-delay 0.2) ;; default is 0.2
+
+(after! (corfu cape)
+  (add-hook! '(prog-mode-hook
+               text-mode-hook
+               conf-mode-hook
+               comint-mode-hook
+               minibuffer-setup-hook
+               eshell-mode-hook)
+             #'+corfu-add-cape-file-h))
+
+(setq lsp-signature-doc-lines 5)
+;; (after! (lsp-mode indent-bars)
+;;   (add-hook! lsp-mode
+;;              #'indent-bars-mode))
+;; (after! lsp
+;;   (setq +lsp-company-backends
+;;         '(company-files
+;;           company-capf
+;;           :with
+;;           company-yasnippet
+;;           :separate)))
+;; (add-hook! 'prog-mode-hook
+;;   (setq +lsp-company-backends
+;;         '(company-files
+;;           company-capf
+;;           :with
+;;           company-yasnippet
+;;           :separate)))
+;; (add-hook! 'lsp-completion-mode-hook
+;;   (setf (alist-get 'lsp-capf completion-category-defaults) '((styles . (basic)))))
+
+;; (after! company
+;;   (setq +company-backend-alist
+;;         '((company-files
+;;            company-capf
+;;            :with
+;;            company-yasnippet
+;;            :separate))))
+;; (setq company-backends
+;;       '((company-files
+;;          company-capf
+;;          :with
+;;          company-yasnippet
+;;          company-keywords
+;;          company-dict
+;;          company-dabbrev-code
+;;          company-dabbrev
+;;          :separate)))
+;; (remove-hook 'lsp-completion-mode-hook '+lsp-init-company-backends-h)
+;; (add-hook 'lsp-completion-mode-hook
+;;           (defun +lsp-init-company-backends-h ()
+;;             (if lsp-completion-mode
+;;                 (progn
+;;                   ;; (setq +lsp-company-backends '(company-capf :with company-yasnippet))
+;;                   (setq +lsp-company-backends '(:separate company-files company-capf))
+;;                   (set
+;;                    (make-local-variable 'company-backends)
+;;                    (cons +lsp-company-backends
+;;                          (remove +lsp-company-backends
+;;                                  (->> company-backends
+;;                                       (remq 'company-yasnippet)
+;;                                       (remq 'company-capf)))))))))
+;; (setq +company-backend-alist
+;;       '((text-mode (:separate company-dabbrev company-yasnippet company-ispell))
+;;         (prog-mode company-capf company-yasnippet)
+;;         (conf-mode company-capf company-dabbrev-code company-yasnippet)))
+;; (after! company
+;;   (setq +company-backend-alist
+;;         '((:separate company-files company-capf))))
+;; (after! lsp
+;;   (if (modulep! :editor snippets)
+;;       (setq +lsp-company-backends '(:separate company-files company-capf company-yasnippet))
+;;     (setq +lsp-company-backends '(:separate company-files company-capf))))
+;; (after! lsp
+;;   (setq +lsp-company-backends
+;;         '(:separate company-files company-capf)))
+;; (add-hook! 'prog-mode-hook
+;;   (setq +lsp-company-backends '(:separate company-files company-capf)))
+;; (defvar +lsp-company-backends
+;;   (if (modulep! :editor snippets)
+;;       '(:separate company-capf company-yasnippet)
+;;     'company-capf)
+;; (setq +lsp-company-backends
+;;       '(company-files
+;;         company-capf
+;;         company-dabbrev-code
+;;         company-dabbrev
+;;         company-yasnippet))
+;; (setq company-backends
+;;       '((:separate
+;;          company-files
+;;          company-keywords
+;;          company-dict
+;;          company-yasnippet
+;;          company-dabbrev-code
+;;          company-dabbrev)))
+
+;; (after! lsp-pylsp
+;;   (setq lsp-pylsp-plugins-pydocstyle-ignore
+;;         ["D100" ; Missing docstring in public module
+;;          "D101"
+;;          "D102"
+;;          "D103" ; Missing docstring in public function
+;;          "D105"
+;;          "D107"
+;;          "D212" ; Multi-line docstring summary should start at the second line
+;;          "D413" ; Missing blank line after last section
+;;          "D401" ; First line should be in imperative mood
+;;          "D403"]
+;;         lsp-pylsp-plugins-rope-autoimport-enabled t
+;;         lsp-pylsp-plugins-jedi-completion-include-params nil))
+
+;; (after! evil
+;;   (modify-syntax-entry ?_ "w"))
+
+(setq undo-limit 80000000                         ; Raise undo-limit to 80Mb
+      auto-save-default t                         ; Nobody likes to loose work, I certainly don't
+      scroll-preserve-screen-position 'always     ; Don't have `point' jump around
+      scroll-margin 5)                            ; It's nice to maintain a little margin
+
+(setq evil-vsplit-window-right t
+      evil-split-window-below t)
+
+(setq org-roam-directory "~/ewiki")
+
+;; (setq +workspaces-main "master")
+
+(after! org-roam
+  (setq org-roam-capture-templates
+        '(("d" "default" plain "%?"
+           :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+           :unnarrowed t))))
+          ;; ("n" "ncmpcpp" plain "\n\n* ${title}\n%?"
+          ;;  :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
+          ;;                     "#+title: ${title}\n#+filetags:\"ncmpcpp_notes\" \"${title}\" \"ncurses\"\n#+startup: show2levels")
+          ;;  :unnarrowed t))))
+
+(setf (alist-get '(markdown-mode org-mode org-roam-mode) +spell-excluded-faces-alist)
+      '(markdown-code-face
+        markdown-reference-face
+        markdown-link-face
+        markdown-url-face
+        markdown-markup-face
+        markdown-html-attr-value-face
+        markdown-html-attr-name-face
+        markdown-html-tag-name-face))
+
+(setq doom-theme 'doom-kanagawa-abyss)
+(add-hook! (prog-mode text-mode conf-mode lsp-mode)
+  :append (indent-bars-mode +1))
+
+;; (setq doom-theme 'doom-one)
+;; (add-hook! 'highlight-indent-guides-mode-hook
+;;   (doom/reload-theme))
+;; (add-hook! 'highlight-indent-guides-mode-hook
+;;   (remove-hook! 'highlight-indent-guides-mode-hook
+;;     #'doom/reload-theme))
+;; (setq my-theme-reloaded nil)
+;; (add-hook! '(prog-mode-hook text-mode-hook conf-mode-hook)
+;;            #'doom/reload-theme)
+;; (add-hook! '(prog-mode-hook text-mode-hook conf-mode-hook)
+;;   (remove-hook! '(prog-mode-hook text-mode-hook conf-mode-hook)
+;;     #'doom/reload-theme))
+;; (after! indent-guides
+;;   (setq doom-theme 'doom-kanagawa))
+
+(setq doom-font (font-spec :font "Monospace" :size 15.0)
+      doom-big-font (font-spec :font "Monospace" :size 36)
+      doom-variable-pitch-font (font-spec :font "Sans" :size 15.0)
+      doom-symbol-font (font-spec :font "Monospace" :size 15.0)
+      doom-serif-font (font-spec :font "Serif" :size 15.0))
+
+;; (after! doom-themes
+;;   (setq doom-themes-enable-bold t
+;;         doom-themes-enable-italic t
+;;         doom-themes-treemacs-enable-variable-pitch nil
+;;         doom-themes-treemacs-theme 'doom-kanagawa
+;;         doom-kanagawa-brighter-comments t
+;;         doom-kanagawa-red-cursor t
+;;         doom-one-light-brighter-comments t
+;;         doom-one-brighter-comments t))
+
+(after! doom-themes
+  (setq doom-themes-enable-bold t
+        doom-themes-enable-italic t
+        doom-themes-treemacs-enable-variable-pitch nil
+        doom-themes-treemacs-theme 'doom-kanagawa-abyss
+        doom-kanagawa-abyss-brighter-comments t
+        doom-kanagawa-abyss-red-cursor t
+        doom-kanagawa-abyss-match-org-blocks t
+        doom-kanagawa-dragon-match-org-blocks t
+        doom-kanagawa-lotus-match-org-blocks t
+        doom-kanagawa-wave-match-org-blocks t
+        doom-one-light-brighter-comments t
+        doom-one-brighter-comments t))
+
+(after! treemacs
+  (setq! treemacs-width 35
+         treemacs-default-visit-action #'treemacs-visit-node-close-treemacs
+         treemacs-show-cursor t))
+
+(custom-set-faces!
+  '(font-lock-comment-face :slant italic))
+
+(setq display-line-numbers-type nil)
+
+(set-face-attribute 'mode-line nil :font "Monospace")
+
+(setq doom-modeline-height 25     ;; sets modeline height
+      doom-modeline-bar-width 5   ;; sets right bar width
+      doom-modeline-persp-name t  ;; adds perspective name to modeline
+      doom-modeline-persp-icon t) ;; adds folder icon next to persp name
+
+(xterm-mouse-mode 1)
+
+;; (setq shell-file-name "/bin/zsh"
+;;       vterm-max-scrollback 5000)
+
+(setq eshell-aliases-file "~/.config/doom/eshell/aliases"
+      eshell-history-size 5000
+      eshell-buffer-maximum-lines 5000
+      eshell-hist-ignoredups t
+      eshell-scroll-to-bottom-on-input t
+      eshell-destroy-buffer-when-process-dies t
+      eshell-visual-commands'("bash" "htop" "ssh" "top" "zsh"))
+
+;; (setq dap-ui-locals-expand-depth t)
+;; (setq dap-auto-show-output nil)
+;; (add-hook 'dap-terminated-hook
+;;           (lambda (arg) (call-interactively #'dap-hydra)))
+
+(setq hscroll-margin 6)
+
+(run-after-saving-unix-mode "/bindsrc$" "wkx-update --binds")
+(run-after-saving-unix-mode "/keysrc$" "wkx-update --keys")
+;; (run-after-saving 'conf-space-mode-hook "/sxhkdrc$" "kill -SIGUSR1 \"$(pidof sxhkd)\"")
+
+(add-to-list 'auto-mode-alist '("xresources" . conf-mode))
+(run-after-saving 'conf-mode-hook "/xresources$"
+                  "xrdb \"$HOME/.config/x11/xresources\"")
+;; (maybe-run-after-saving 'c-mode-hook "/config\.h$" "dwmup")
+;; (add-hook! 'conf-mode-hook
+;;   (when (stringp buffer-file-name)
+;;     (when (string-match-p "/xresources$" buffer-file-name)
+;;       (add-hook! 'after-save-hook :local
+;;         (shell-command "xrdb \"$HOME/.config/x11/xresources\"")))))
+
+(run-after-saving-unix-mode "/dunstrc$" "pkill dunst; systemctl --user restart dunst.service")
+;; (add-hook! 'conf-unix-mode-hook
+;;   (when (stringp buffer-file-name)
+;;       (if (string-match-p "/dunstrc$" buffer-file-name)
+;;           (add-hook! 'after-save-hook :local
+;;             (shell-command-to-string "systemctl --user restart dunst.service")))))
+
+;; (setq spell-fu-ignore-modes '(org-mode org-roam-mode))
+;; (after! (:or org org-roam)
+;; Disable node completion, very annyoing outside of links.
+(after! org-roam
+  (setq! org-roam-completion-everywhere nil))
+(add-hook! '(org-mode-hook org-roam-mode-hook gfm-mode-hook)
+            #'auto-fill-mode
+            ;; #'smartparens-mode
+            (setq-local fill-column 60)
+            (spell-fu-mode -1))
+(add-hook! doom-switch-buffer
+  (when (eq major-mode 'vterm-mode)
+    (evil-collection-vterm-insert)))
+;; (advice-add '+vterm/toggle :around
+;;             (lambda (fn &rest args) (apply fn args)
+;;               (when (eq major-mode 'vterm-mode)
+;;                 (evil-collection-vterm-insert))))
+
+(setq doom-leader-key ","
+      doom-leader-alt-key "M-,"
+      doom-localleader-key "SPC"
+      doom-localleader-alt-key "M-SPC")
+
+(map! :leader
+      "," nil
+      "." nil
+      "<" nil
+      :desc "Switch project buffer" "," #'projectile-switch-to-buffer
+      :desc "Find project file" "." #'projectile-find-file
+      :desc "Find file" ">" #'find-file
+      :desc "Consult project buffer" "<" #'consult-buffer)
+(map! :leader
+      (:prefix ("b" . "buffer")
+       (:prefix ("f" . "file")
+        :desc "Rename" "r" #'rename-visited-file)
+       :desc "List bookmarks" "L" #'list-bookmarks
+       :desc "Save current bookmarks to bookmark file" "w" #'bookmark-save))
+
+(evil-define-key 'normal ibuffer-mode-map
+        (kbd "f c") 'ibuffer-filter-by-content
+        (kbd "f d") 'ibuffer-filter-by-directory
+        (kbd "f f") 'ibuffer-filter-by-filename
+        (kbd "f m") 'ibuffer-filter-by-mode
+        (kbd "f n") 'ibuffer-filter-by-name
+        (kbd "f x") 'ibuffer-filter-disable
+        (kbd "g h") 'ibuffer-do-kill-lines
+        (kbd "g H") 'ibuffer-update)
+
+;; With dired-open plugin, you can launch external programs for certain extensions
+;; For example, I set all .png files to open in 'sxiv' and all .mp4 files to open in 'mpv'
+;; (defadvice! +dired--dirvish-find-entry-a (fn &rest args)
+;;   :around #'dirvish-find-entry-a
+;;   (let ((dirvish-reuse-session t))
+;;     (apply fn args)))
+(after! dirvish
+  (map! :map dirvish-mode-map
+        :n "l" #'dired-find-alternate-file))
+  ;; (setq! dirvish-side-auto-close t)
+  ;; (setq! dirvish-reuse-session t)
+  ;; (setq! dired-kill-when-opening-new-dired-buffer t))
+;;   (setq! dirvish-open-with-programs
+;;          (append
+;;           '((("gif" "jpg" "png") "/usr/local/bin/nsxiv" "%f")
+;;             (("pdf") "/usr/bin/sioyek" "--new-window" "%f"))
+;;           dirvish-open-with-programs)))
+;; (setq dired-open-extensions '(("gif" . "nsxiv")
+;;                               ("jpg" . "nsxiv")
+;;                               ("png" . "nsxiv")
+;;                               ("pdf" . "sioyek --new-window")
+;;                               ("mkv" . "mpv")
+;;                               ("mp4" . "mpv")))
+
+;; Get file icons in dired
+;; "-ahl -v --group-directories-first"
+(add-hook! 'dired-mode-hook
+           ;; 'all-the-icons-dired-mode
+           'dired-hide-details-mode)
+
+(after! dired
+  (setq dired-listing-switches "-ahvl --group-directories-first"))
+(map! :leader
+      (:prefix ("d" . "dired")
+       :desc "Dirvish side" "j" #'dirvish-side)
+      (:after dired
+       (:map dired-mode-map
+        :desc "Peep-dired image previews" "d p" #'peep-dired
+        :desc "Dired view file" "d v" #'dired-view-file)))
+;; (evil-define-key 'normal dired-mode-map
+;;   (kbd "M-RET") 'dired-display-file
+;;   ;; (kbd "h") 'dired-up-directory
+;;   ;; (kbd "l") 'dired-open-file ; use dired-find-file instead of dired-open.
+;;   (kbd "m") 'dired-mark
+;;   (kbd "t") 'dired-toggle-marks
+;;   (kbd "u") 'dired-unmark
+;;   (kbd "C") 'dired-do-copy
+;;   (kbd "D") 'dired-do-delete
+;;   (kbd "J") 'dired-goto-file
+;;   (kbd "M") 'dired-do-chmod
+;;   (kbd "N") 'dired-do-man
+;;   (kbd "O") 'dired-do-chown
+;;   (kbd "P") 'dired-do-print
+;;   (kbd "R") 'dired-do-rename
+;;   (kbd "T") 'dired-do-touch
+;;   (kbd "Y") 'dired-copy-filenamecopy-filename-as-kill ; copies filename to kill ring.
+;;   (kbd "+") 'dired-create-directory
+;;   (kbd "-") 'dired-up-directory
+;;   (kbd "% l") 'dired-downcase
+;;   (kbd "% u") 'dired-upcase
+;;   (kbd "; d") 'epa-dired-do-decrypt
+;;   (kbd "; e") 'epa-dired-do-encrypt)
+
+(evil-define-key 'normal peep-dired-mode-map
+  (kbd "j") 'peep-dired-next-file
+  (kbd "k") 'peep-dired-prev-file)
+(add-hook 'peep-dired-hook 'evil-normalize-keymaps)
+
+(map! :leader
+      :desc "Load new theme" "H t" #'consult-theme)
+
+(map! :leader
+      (:prefix ("r" . "registers")
+       :desc "Copy to register" "c" #'copy-to-register
+       :desc "Frameset to register" "f" #'frameset-to-register
+       :desc "Insert contents of register" "i" #'insert-register
+       :desc "Jump to register" "j" #'jump-to-register
+       :desc "List registers" "l" #'list-registers
+       :desc "Number to register" "n" #'number-to-register
+       :desc "Interactively choose a register" "r" #'counsel-register
+       :desc "View a register" "v" #'view-register
+       :desc "Window configuration to register" "w" #'window-configuration-to-register
+       :desc "Increment register" "+" #'increment-register
+       :desc "Point to register" "SPC" #'point-to-register))
+
+(map! :map dap-mode-map
+      :leader
+      "d b" nil
+      "d d" nil
+      "d e" nil
+      "d t" nil
+      (:prefix ("d" . "dap")
+       ;; basics
+       :desc "dap next"          "n" #'dap-next
+       :desc "dap step in"       "i" #'dap-step-in
+       :desc "dap step out"      "o" #'dap-step-out
+       :desc "dap continue"      "c" #'dap-continue
+       :desc "dap hydra"         "h" #'dap-hydra
+       :desc "dap debug restart" "r" #'dap-debug-restart
+       :desc "dap debug"         "s" #'dap-debug
+       ;; debug
+       (:prefix ("d" . "Debug")
+        :desc "dap debug recent"  "r" #'dap-debug-recent
+        :desc "dap debug last"    "l" #'dap-debug-last)
+       ;; eval
+       (:prefix ("e" . "Eval")
+        :desc "eval"                "e" #'dap-eval
+        :desc "eval region"         "r" #'dap-eval-region
+        :desc "eval thing at point" "s" #'dap-eval-thing-at-point
+        :desc "add expression"      "a" #'dap-ui-expressions-add
+        :desc "remove expression"   "d" #'dap-ui-expressions-remove)
+       ;; breakpoint
+       (:prefix ("b" . "Breakpoint")
+        :desc "dap breakpoint toggle"      "b" #'dap-breakpoint-toggle
+        :desc "dap breakpoint condition"   "c" #'dap-breakpoint-condition
+        :desc "dap breakpoint hit count"   "h" #'dap-breakpoint-hit-condition
+        :desc "dap breakpoint log message" "l" #'dap-breakpoint-log-message)
+       ;; debug
+       (:prefix ("t" . "Template")
+        :desc "dap edit template" "e" #'dap-debug-edit-template)))
+
+;; (after! projectile
+;;   (setq projectile-project-root-files-bottom-up
+;;         (remove ".git" projectile-project-root-files-bottom-up)))
+(after! projectile
+  (setq projectile-buffers-filter-function #'projectile-buffers-with-file-or-process)
+  (setq projectile-files-cache-expire 60))
+
+(map! :leader
+      (:prefix ("e" . "Eshell")
+       :desc "Eshell" "e s" #'eshell
+       :desc "Counsel eshell history" "e h" #'counsel-esh-history))
+
+(map! :leader
+      :desc "Vterm popup toggle" "t t" #'+vterm/toggle
+      :desc "Open vterm" "t v" #'my-open-vterm)
+(map! :after vterm
+      :map vterm-mode-map
+      :i "<S-return>" #'vterm-send-shift-enter)
+
+(defun prefer-horizontal-split ()
+  (set-variable 'split-height-threshold nil t)
+  (set-variable 'split-width-threshold 40 t)) ; make this as low as needed
+(add-hook! 'markdown-mode-hook 'prefer-horizontal-split)
+
+;; (map! :leader
+;;       :prefix ("w". "window")
+;;       :desc "Window enlargen" "i" #'doom/window-enlargen
+;;       :desc "balance windows" "y" #'balance-windows
+;;       :desc "Fit window" #'(evil-window-set-height 20))
+(map! :leader
+      :desc "Shrink height" "_" (cmd! (evil-window-set-height 20)))
+(map! :leader
+      (:prefix ("w". "window")
+       :desc "Window enlargen" "i" #'doom/window-enlargen
+       :desc "balance windows" "y" #'balance-windows))
+       ;; :desc "Fit window" "_" (cmd! (evil-window-set-height 20))))
+
+(map! :leader
+      :desc "Clone indirect buffer other window" "b c" #'clone-indirect-buffer-other-window)
+
+(map! :leader
+      (:prefix ("w" . "window")
+       :desc "Winner redo" "<right>" #'winner-redo
+       :desc "Winner undo" "<left>" #'winner-undo))
+
+(map! :leader
+      :desc "Zap to char" "z" #'zap-to-char
+      :desc "Zap up to char" "Z" #'zap-up-to-char)
+
+(defun my-c-hook-settings ()
+  (setq-local +format-with-lsp nil)
+  (setq c-basic-offset 4))
+(add-hook! '(c-mode-hook c++-mode-hook)
+           #'my-c-hook-settings)
+
+(map! :after evil
+      :map evil-normal-state-map
+      "ZZ"      #'doom/save-and-kill-buffer
+      "ZQ"      #'kill-current-buffer)
+
+(defun toggle-my-theme ()
+  "Toggle light and dark themes"
+  (interactive)
+  (if (eq doom-theme 'doom-one)
+      (load-theme 'doom-one-light t)
+    (load-theme 'doom-one t)))
+
+(map! :leader
+      :desc "Previous workspace"         "TAB h" #'+workspace/switch-left
+      :desc "Previous workspace"         "TAB l" #'+workspace/switch-right
+      :desc "Toggle syntax highlighting" "t h"   #'tree-sitter-hl-mode
+      :desc "Toggle treemacs"            "t r"   #'+treemacs/toggle)
+      ;; :desc "Toggle theme"               "t d"   #'toggle-my-theme)
+
+(map! :leader
+      :desc "Quit Emacs"   "q e" #'save-buffers-kill-terminal
+      :desc "Delete frame" "q q" #'save-buffers-kill-emacs)
+
+;; (map! :localleader
+;;       :map org-mode-map
+;;       (:prefix ("m" . "my maps")
+;;        (:prefix ("e" . "export")
+;;         :desc "Export to gfm" "g" #'org-pandoc-export-to-gfm
+;;         :desc "Export as gfm" "G" #'org-pandoc-export-as-gfm)))
+
+(map! :leader
+      (:prefix ("t" . "toggle")
+       :desc "Toggle line numbers" "L" #'doom/toggle-line-numbers
+       :desc "Toggle lsp server"   "l" #'lsp-workspace-restart))
+
+(evil-global-set-key 'insert (kbd "M-v") 'evil-paste-before)
+(evil-global-set-key 'insert (kbd "C-e") 'evil-scroll-line-to-center)
+
+(map! :after evil
+      :map evil-normal-state-map
+      "g b"     #'evil-jump-backward
+      "C-z"     nil
+      "q q"     #'evil-fill-and-move
+      "Q"       #'evil-fill-and-move)
+
+(defadvice! prompt-for-buffer (&rest _)
+  :after '(evil-window-split evil-window-vsplit)
+  (consult-buffer))
+
+(global-set-key (kbd "C-z") nil)
+(map! :im
+      "C-f" #'evil-snipe-f
+      "C-S-f" #'evil-snipe-F)
+(map! :im "C-z" nil)
+(map! :leader
+      "h" nil
+      :desc "Help" "H" help-map
+      "h" #'evil-window-left
+      "j" #'evil-window-down
+      "k" #'evil-window-up
+      "l" #'evil-window-right)
+
+(map! :leader
+      (:prefix ("TAB" . "workspace")
+       "s" nil
+       (:prefix ("s" . "switch")
+        :desc "Switch to 1st workspace" "a" #'+workspace/switch-to-0
+        :desc "Switch to 2nd workspace" "r" #'+workspace/switch-to-1
+        :desc "Switch to 3rd workspace" "s" #'+workspace/switch-to-2
+        :desc "Switch to 4th workspace" "t" #'+workspace/switch-to-3
+        :desc "Switch to 5th workspace" "n" #'+workspace/switch-to-4
+        :desc "Switch to 6th workspace" "e" #'+workspace/switch-to-5
+        :desc "Switch to 7th workspace" "i" #'+workspace/switch-to-6
+        :desc "Switch to 8th workspace" "o" #'+workspace/switch-to-7)
+       :desc "Save to workspace file"     "S"   #'+workspace/save
+       :desc "Switch to last workspace"   "TAB" #'+workspace/other
+       :desc "Display tab bar"            "."   #'+workspace/display
+       :desc "List workspaces"            "o"   #'+workspace/switch-to))
+
+;; (map! :leader
+;;       (:prefix ("r" . "roam")
+;;        (:prefix ("n" . "node")
+;;         :desc "Find node" "f" #'org-roam-node-find
+;;         :desc "Insert node" "i" #'org-roam-node-insert)
+;;        (:prefix ("l" . "links")
+;;         :desc "Yank link" "y" #'org-store-link
+;;         :desc "Paste link" "p" #'org-insert-link)))
+
+(map! :leader
+      :desc "Find node" "f n" #'org-roam-node-find
+      "n l" nil
+      (:prefix ("n" . "notes")
+       (:prefix ("l" . "links")
+        :desc "Yank link"  "y" #'org-store-link
+        :desc "Paste link" "p" #'org-insert-link)))
+
+(map! :after org
+      :localleader
+      (:prefix ("l" . "links")
+       (:prefix ("r" . "references")
+        :desc "URL"          "u" #'org-insert-link-from-clipboard
+        :desc "ID"           "i" #'org-add-id-link
+        :desc "ID +desc"     "I" #'org-add-id-link-desc
+        :desc "Header"       "h" #'org-add-header-link
+        :desc "Header +desc" "H" #'org-add-header-link-desc)))
+(map! :after org
+      :localleader
+      (:prefix ("H" . "Help")
+       :desc "Org Entities" "e" #'org-entities-help))
+(map! :after org
+      :localleader
+      (:prefix ("SPC" . "mine")
+       (:prefix ("t" . "toggle")
+        :desc "Pretty entities" "p" #'org-toggle-pretty-entities)
+       :desc "LaTeX" "l" #'org-latex-preview))
+       ;;:desc "Clear LaTeX" "L" #'org-clear-latex-preview))
+
+(map! :leader
+      :desc "Get files" "c g" (lambda () (interactive) (run-command-in-vterm "grep -R")))
+
+;; (map! :after undo-fu
+;;       "C-/" nil)
+(map! :after cape
+      :prefix ("C-x c" . "cape")
+      :desc "cape-file" :i "f" #'cape-file
+      :desc "cape-dict" :i "d" #'cape-dict
+      :desc "cape-dabbrev" :i "b" #'cape-dabbrev)
+(map! :after cape
+      :i "C-/" #'cape-dabbrev)
+(map! :after corfu
+      :i "C-g" #'corfu-quit)
+
+(map! :leader
+      "x" nil
+      :desc "Execute" "x" #'execute-extended-command)

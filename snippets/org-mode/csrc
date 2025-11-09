@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: csrc
+# uuid: csrc
+# key: csrc
+# condition: t
+# --
+#+begin_src ${1:c} ${2::tangle} $3
+$0
+#+end_src

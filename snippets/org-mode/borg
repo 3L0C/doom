@@ -1,0 +1,11 @@
+# -*- mode: snippet -*-
+# name: borg
+# uuid: borg
+# key: borg
+# condition: t
+# --
+#+filetags: ${1::computer_science:}
+#+startup: ${2:latexpreview}
+#+auto_tangle: nil
+
+$0

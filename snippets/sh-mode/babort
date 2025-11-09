@@ -1,0 +1,13 @@
+# -*- mode: snippet -*-
+# name: babort
+# uuid: babort
+# key: babort
+# condition: t
+# --
+abort() {
+    usage >&2
+    [[ -n "\$1" ]] && echo "\${0##*/}: \$1" >&2
+    exit 1
+}
+
+$0

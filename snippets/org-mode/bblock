@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: bblock
+# uuid: bblock
+# key: bblock
+# condition: t
+# --
+#+begin_${1:example}
+$0
+#+end_$1

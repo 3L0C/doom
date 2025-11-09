@@ -1,0 +1,10 @@
+# -*- mode: snippet -*-
+# name: iff
+# uuid: iff
+# key: iff
+# condition: t
+# --
+if (${1:condition})
+{
+    $0
+}

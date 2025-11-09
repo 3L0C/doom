@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: --f
+# uuid: --f
+# key: --f
+# condition: t
+# --
+---@field ${1:name} ${2:type} $0
