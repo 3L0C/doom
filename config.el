@@ -52,6 +52,9 @@
 (global-auto-revert-mode 1)
 (setq global-auto-revert-non-file-buffers t)
 
+(after! lsp-mode
+  ;; (setq lsp-clangd-binary-path (executable-find "clangd"))
+  (setq lsp-clangd-binary-path "/nix/store/7l6wv859y0clr9xaql2v5ryw53ds8wzq-clang-tools-21.1.2/bin/clangd"))
 (add-hook! 'c-mode-common-hook
            (modify-syntax-entry ?_ "w"))
 (setq c-tab-always-indent nil)
@@ -552,6 +555,8 @@
 
 (xterm-mouse-mode 1)
 
+(after! vterm
+  (setq vterm-max-scrollback 100000))
 ;; (setq shell-file-name "/bin/zsh"
 ;;       vterm-max-scrollback 5000)
 

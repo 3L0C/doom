@@ -1,0 +1,179 @@
+# Comprehensive test file for wks-mode syntax highlighting
+# Tests all features including :var macro, interpolations, and special syntax
+
+# ============================================================================
+# Test 1: Preprocessor Macros
+# ============================================================================
+
+# Switch macros
+:debug
+:sort
+:top
+
+# String macros
+:include "other.wks"
+:fg-key "#ffffff"
+:bg "#000000"
+:shell "/bin/bash"
+:font "monospace"
+
+# Integer macros
+:menu-width 800
+:menu-gap -10
+:max-columns 3
+:border-width 2
+
+# Float macros
+:border-radius 5.5
+
+# ============================================================================
+# Test 2: :var Macro Declarations (should highlight distinctly)
+# ============================================================================
+
+:var "greeting" "hello"
+:var "my_var" "test value"
+:var "app_name" "MyApp"
+:var "special key" "hello world!"
+:var "path" "/usr/local/bin"
+
+# ============================================================================
+# Test 3: User Variable Interpolations in Commands
+# ============================================================================
+
+a "Test greeting" %{{echo %(greeting)}}
+b "Test my_var" %{{echo %(my_var)}}
+c "Multiple vars" %{{echo %(greeting) %(my_var) %(app_name)}}
+d "Path var" %{{cd %(path)}}
+
+# ============================================================================
+# Test 4: User Variable Interpolations in Descriptions
+# ============================================================================
+
+e "%(app_name) Test" %{{echo test}}
+f "%(greeting) from %(app_name)" %{{notify-send "%(my_var)"}}
+g "Path: %(path)" %{{ls}}
+
+# ============================================================================
+# Test 5: Builtin Interpolations (should be different color than user vars)
+# ============================================================================
+
+h "Builtin key" %{{echo %(key)}}
+i "Builtin desc" %{{echo %(desc)}}
+j "Builtin transformations" %{{echo %(desc^) %(desc^^) %(desc,) %(desc,,)}}
+k "Index interpolations" %{{echo %(index) %(index+1)}}
+
+# ============================================================================
+# Test 6: Chord Arrays (should highlight [xyz] and ...)
+# ============================================================================
+
+[xyz] "Item %(index+1) - %(key)" %{{echo %(greeting) for %(desc)}}
+[abc] "Builtin array %(index+1)" %{{echo Item %(key): %(desc)}}
+
+... "Wildcard %(index+1)" %{{echo Fallback %(key)}}
+
+# ============================================================================
+# Test 7: Special Keys (should be highlighted)
+# ============================================================================
+
+TAB "Tab key" %{{echo tab}}
+SPC "Space key" %{{echo space}}
+RET "Return key" %{{echo return}}
+ESC "Escape" %{{echo esc}}
+
+Home "Home key" %{{echo home}}
+End "End key" %{{echo end}}
+Left "Left arrow" %{{echo left}}
+Right "Right arrow" %{{echo right}}
+
+F1 "Function key 1" %{{echo f1}}
+F12 "Function key 12" %{{echo f12}}
+
+# ============================================================================
+# Test 8: Key Modifiers (should be highlighted)
+# ============================================================================
+
+C-a "Control-a" %{{echo ctrl-a}}
+M-x "Meta-x" %{{echo meta-x}}
+S-TAB "Shift-Tab" %{{echo shift-tab}}
+C-M-f "Control-Meta-f" %{{echo ctrl-meta-f}}
+
+# ============================================================================
+# Test 9: Hooks and Flags
+# ============================================================================
+
+p "Prefix with hooks" ^before ^after
+{
+    q "Chord with flags" +keep +close %{{cmd}}
+    r "Multiple flags" +execute +write +inherit %{{cmd}}
+    s "Sync hook" ^sync-before +sync-command %{{cmd}}
+}
+
+# ============================================================================
+# Test 10: Different Command Delimiters
+# ============================================================================
+
+t "Double braces" %{{echo "double braces"}}
+u "Double parens" %((echo "double parens"))
+v "Double brackets" %[[echo "double brackets"]]
+w "Arbitrary delimiter" %||echo "pipe delimiters"||
+x "Another delimiter" %##echo "hash delimiters"##
+
+# ============================================================================
+# Test 11: Nested Prefixes with Variables
+# ============================================================================
+
+:var "nested_var" "nested value"
+
+y "Complex Prefix %(app_name)"
+{
+    :var "inner_var" "inner value"
+
+    z "Nested chord" %{{echo %(nested_var) and %(greeting)}}
+
+    a "Deep prefix"
+    {
+        b "Deep chord" %{{echo %(inner_var)}}
+        c "All vars" %{{echo %(greeting) %(nested_var) %(inner_var)}}
+    }
+}
+
+# ============================================================================
+# Test 12: Mixed Builtin and User Variables
+# ============================================================================
+
+[mnop] "Mixed %(index+1)" +write %{{echo Key: %(key), Greeting: %(greeting), Desc: %(desc)}}
+
+# ============================================================================
+# Test 13: Strings and Escaping
+# ============================================================================
+
+d "String with \"escaped quotes\"" %{{echo test}}
+e "Escaped \\ backslash" %{{echo test}}
+f "Escaped \{ \} \[ \] special chars" %{{echo test}}
+
+# ============================================================================
+# Test 14: Comments (should not affect highlighting)
+# ============================================================================
+
+# This is a comment
+g "After comment" %{{cmd}}  # Inline comment
+
+# Comments with special chars: :var %(key) +flag ^hook %{{cmd}}
+# Should not be highlighted as syntax
+
+# ============================================================================
+# Test 15: Edge Cases
+# ============================================================================
+
+# Variable with spaces in name
+h "Space var: %(special key)" %{{echo %(special key)}}
+
+# Empty patterns (edge cases)
+i "" %{{empty description}}
+
+# Long interpolation
+j "Long: %(greeting)" %{{echo %(greeting) %(my_var) %(app_name) %(path) %(nested_var)}}
+
+# ============================================================================
+# End of Test File
+# ============================================================================
