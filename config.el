@@ -1,8 +1,5 @@
 (load! "funcs.el")
 
-;; (use-package! emojify
-;;   :hook (after-init . global-emojify-mode))
-
 (defvar cb/pdf-viewer "sioyek"
   "The PDF viewer to use.")
 (defvar cb/pdf-viewer-page-argument "--page"
@@ -16,6 +13,7 @@
 ;; (run-with-idle-timer 600 t #'cb/update-pdf-files-cache)
 (after! org
   (org-link-set-parameters "pdf" :follow #'org-pdf-link-follow-link)
+  (add-to-list 'org-modules 'ol-info)
   (setq! org-hide-emphasis-markers t
          org-startup-with-inline-images t
          ;; org-pretty-entities t
@@ -53,9 +51,10 @@
 (setq global-auto-revert-non-file-buffers t)
 
 (after! lsp-mode
-  ;; (setq lsp-clangd-binary-path (executable-find "clangd"))
-  (setq lsp-clangd-binary-path "/nix/store/7l6wv859y0clr9xaql2v5ryw53ds8wzq-clang-tools-21.1.2/bin/clangd")
-  (setq lsp-format-buffer-on-save t))
+  ;; Disable auto-download of language servers (incompatible with NixOS)
+  (setq lsp-enable-suggest-server-download nil
+        ;; Let lsp-mode find clangd from PATH (after direnv loads)
+        lsp-format-buffer-on-save t))
 (add-hook! 'c-mode-common-hook
            (modify-syntax-entry ?_ "w"))
 (setq c-tab-always-indent nil)
@@ -70,28 +69,42 @@
                         (access-label . -)
                         (inclass . +)
                         (substatement-label . 0)
-                        (case-lable . 0)
+                        (case-label . 0)
                         (arglist-intro . +)
                         ;; (arglist-cont . +)
                         ;; (arglist-cont-nonempty . +)
                         (arglist-close . 0)))))
-(defun my-c++-mode-hook ()
-  (c-add-style "my-c++-style" my-c++-style)
-  (c-set-style "my-c++-style")
-  (setq! c-default-style "my-c++-style"
-         c-ts-mode-indent-style 'bsd
-         lsp-ui-sideline-enable t
-         c-basic-offset 4
-         c-ts-mode-indent-offset 4
-         tab-width 4))
-(add-hook! '(c++-mode-hook c++-ts-mode-hook) 'my-c++-mode-hook)
-(c-add-style "my-c++-style" my-c++-style)
-(setq! c-default-style "my-c++-style"
-       c-ts-mode-indent-style 'bsd
-       lsp-ui-sideline-enable t
-       c-basic-offset 4
-       c-ts-mode-indent-offset 4
-       tab-width 4)
+;; Hook for traditional CC Mode (c-mode, c++-mode)
+(defun my-c/c++-mode-hook ()
+  "Common settings for C and C++ modes (CC Mode only)."
+  ;; Register and apply style immediately (buffer-local)
+  (c-add-style "my-c++-style" my-c++-style t)
+  ;; Other buffer-local settings
+  (setq-local c-basic-offset 4
+              tab-width 4)
+  ;; Fix indent-bars spacing
+  (when (bound-and-true-p indent-bars-mode)
+    (setq-local indent-bars-spacing 4)
+    (indent-bars-reset)))
+
+;; Hook for tree-sitter modes (c-ts-mode, c++-ts-mode)
+(defun my-c/c++-ts-mode-hook ()
+  "Common settings for C and C++ tree-sitter modes."
+  ;; Tree-sitter modes don't use CC Mode styles, so skip c-add-style
+  (setq-local c-ts-mode-indent-offset 4
+              c-basic-offset 4
+              tab-width 4
+              c-ts-mode-indent-style 'bsd)
+  ;; Fix indent-bars spacing
+  (when (bound-and-true-p indent-bars-mode)
+    (setq-local indent-bars-spacing 4)
+    (indent-bars-reset)))
+
+;; Add hooks separately based on mode type
+(add-hook! '(c-mode-hook c++-mode-hook)
+           #'my-c/c++-mode-hook)
+(add-hook! '(c-ts-mode-hook c++-ts-mode-hook)
+           #'my-c/c++-ts-mode-hook)
 (after! lsp-clangd
   (setq lsp-clients-clangd-args
         '("-j=3"
@@ -265,8 +278,6 @@
 (setq +doom-dashboard-pwd-policy "~/"
       fancy-splash-image "~/.config/doom/doom-emacs-dash.png")
 
-(after! org (add-to-list 'org-modules 'ol-info))
-
 (setq delete-by-moving-to-trash t
       trash-directory "~/.local/share/Trash/files/")
 
@@ -275,8 +286,8 @@
 
 (use-package! centered-cursor-mode)
 (after! centered-cursor-mode
-  (add-hook! (prog-mode text-mode conf-mode lsp-mode)
-             :append (centered-cursor-mode)))
+  (add-hook! (prog-mode text-mode conf-mode)
+             :append #'centered-cursor-mode))
 
 (after! spell-fu
   ;; TODO workround for https://github.com/doomemacs/doomemacs/issues/6246
@@ -319,29 +330,6 @@
          corfu-auto-delay 0.2)
   (map! :map corfu-map
         :i "S-SPC" #'corfu-insert-separator))
-;; (map! :after corfu
-;;       :map corfu-map
-;;       :i [tab] #'corfu-next)
-;; (map! :i [tab] (cmds! (and (modulep! :editor snippets)
-;;                            (yas-maybe-expand-abbrev-key-filter 'yas-expand))
-;;                       #'yas-expand
-;;                       (and (bound-and-true-p company-mode)
-;;                            (modulep! :completion company +tng))
-;;                       #'company-indent-or-complete-common
-;;                       (and (bound-and-true-p corfu-mode)
-;;                            (modulep! :completion corfu))
-;;                       #'indent-for-tab-command))
-  ;;        tab-always-indent t
-  ;;        tab-first-completion 'word-or-paren-or-punct)
-  ;; (map! :map corfu-map
-  ;;       :i "TAB" nil
-  ;;       :i "S-TAB" nil))
-        ;; :i "TAB" #'corfu-next
-        ;; :i "S-TAB" #'corfu-previous))
-
-;; (setq company-statistics-mode t)
-;; (setq company-minimum-prefix-length 2
-;;       company-idle-delay 0.2) ;; default is 0.2
 
 (after! (corfu cape)
   (add-hook! '(prog-mode-hook
@@ -353,109 +341,6 @@
              #'+corfu-add-cape-file-h))
 
 (setq lsp-signature-doc-lines 5)
-;; (after! (lsp-mode indent-bars)
-;;   (add-hook! lsp-mode
-;;              #'indent-bars-mode))
-;; (after! lsp
-;;   (setq +lsp-company-backends
-;;         '(company-files
-;;           company-capf
-;;           :with
-;;           company-yasnippet
-;;           :separate)))
-;; (add-hook! 'prog-mode-hook
-;;   (setq +lsp-company-backends
-;;         '(company-files
-;;           company-capf
-;;           :with
-;;           company-yasnippet
-;;           :separate)))
-;; (add-hook! 'lsp-completion-mode-hook
-;;   (setf (alist-get 'lsp-capf completion-category-defaults) '((styles . (basic)))))
-
-;; (after! company
-;;   (setq +company-backend-alist
-;;         '((company-files
-;;            company-capf
-;;            :with
-;;            company-yasnippet
-;;            :separate))))
-;; (setq company-backends
-;;       '((company-files
-;;          company-capf
-;;          :with
-;;          company-yasnippet
-;;          company-keywords
-;;          company-dict
-;;          company-dabbrev-code
-;;          company-dabbrev
-;;          :separate)))
-;; (remove-hook 'lsp-completion-mode-hook '+lsp-init-company-backends-h)
-;; (add-hook 'lsp-completion-mode-hook
-;;           (defun +lsp-init-company-backends-h ()
-;;             (if lsp-completion-mode
-;;                 (progn
-;;                   ;; (setq +lsp-company-backends '(company-capf :with company-yasnippet))
-;;                   (setq +lsp-company-backends '(:separate company-files company-capf))
-;;                   (set
-;;                    (make-local-variable 'company-backends)
-;;                    (cons +lsp-company-backends
-;;                          (remove +lsp-company-backends
-;;                                  (->> company-backends
-;;                                       (remq 'company-yasnippet)
-;;                                       (remq 'company-capf)))))))))
-;; (setq +company-backend-alist
-;;       '((text-mode (:separate company-dabbrev company-yasnippet company-ispell))
-;;         (prog-mode company-capf company-yasnippet)
-;;         (conf-mode company-capf company-dabbrev-code company-yasnippet)))
-;; (after! company
-;;   (setq +company-backend-alist
-;;         '((:separate company-files company-capf))))
-;; (after! lsp
-;;   (if (modulep! :editor snippets)
-;;       (setq +lsp-company-backends '(:separate company-files company-capf company-yasnippet))
-;;     (setq +lsp-company-backends '(:separate company-files company-capf))))
-;; (after! lsp
-;;   (setq +lsp-company-backends
-;;         '(:separate company-files company-capf)))
-;; (add-hook! 'prog-mode-hook
-;;   (setq +lsp-company-backends '(:separate company-files company-capf)))
-;; (defvar +lsp-company-backends
-;;   (if (modulep! :editor snippets)
-;;       '(:separate company-capf company-yasnippet)
-;;     'company-capf)
-;; (setq +lsp-company-backends
-;;       '(company-files
-;;         company-capf
-;;         company-dabbrev-code
-;;         company-dabbrev
-;;         company-yasnippet))
-;; (setq company-backends
-;;       '((:separate
-;;          company-files
-;;          company-keywords
-;;          company-dict
-;;          company-yasnippet
-;;          company-dabbrev-code
-;;          company-dabbrev)))
-
-;; (after! lsp-pylsp
-;;   (setq lsp-pylsp-plugins-pydocstyle-ignore
-;;         ["D100" ; Missing docstring in public module
-;;          "D101"
-;;          "D102"
-;;          "D103" ; Missing docstring in public function
-;;          "D105"
-;;          "D107"
-;;          "D212" ; Multi-line docstring summary should start at the second line
-;;          "D413" ; Missing blank line after last section
-;;          "D401" ; First line should be in imperative mood
-;;          "D403"]
-;;         lsp-pylsp-plugins-rope-autoimport-enabled t
-;;         lsp-pylsp-plugins-jedi-completion-include-params nil))
-
-;; (after! evil
-;;   (modify-syntax-entry ?_ "w"))
 
 (setq undo-limit 80000000                         ; Raise undo-limit to 80Mb
       auto-save-default t                         ; Nobody likes to loose work, I certainly don't
@@ -465,15 +350,15 @@
 (setq evil-vsplit-window-right t
       evil-split-window-below t)
 
-(setq org-roam-directory "~/ewiki")
-
 ;; (setq +workspaces-main "master")
 
 (after! org-roam
-  (setq org-roam-capture-templates
-        '(("d" "default" plain "%?"
-           :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
-           :unnarrowed t))))
+  (setq! org-roam-directory "~/ewiki"
+         org-roam-completion-everywhere nil
+         org-roam-capture-templates
+         '(("d" "default" plain "%?"
+            :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+            :unnarrowed t))))
           ;; ("n" "ncmpcpp" plain "\n\n* ${title}\n%?"
           ;;  :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
           ;;                     "#+title: ${title}\n#+filetags:\"ncmpcpp_notes\" \"${title}\" \"ncurses\"\n#+startup: show2levels")
@@ -490,8 +375,8 @@
         markdown-html-tag-name-face))
 
 (setq doom-theme 'doom-kanagawa-abyss)
-(add-hook! (prog-mode text-mode conf-mode lsp-mode)
-  :append (indent-bars-mode +1))
+(add-hook! (prog-mode text-mode conf-mode)
+  :append #'indent-bars-mode)
 
 ;; (setq doom-theme 'doom-one)
 ;; (add-hook! 'highlight-indent-guides-mode-hook
@@ -600,9 +485,6 @@
 
 ;; (setq spell-fu-ignore-modes '(org-mode org-roam-mode))
 ;; (after! (:or org org-roam)
-;; Disable node completion, very annyoing outside of links.
-(after! org-roam
-  (setq! org-roam-completion-everywhere nil))
 (add-hook! '(org-mode-hook org-roam-mode-hook gfm-mode-hook)
             #'auto-fill-mode
             ;; #'smartparens-mode
@@ -815,13 +697,6 @@
 (map! :leader
       :desc "Zap to char" "z" #'zap-to-char
       :desc "Zap up to char" "Z" #'zap-up-to-char)
-
-(defun my-c-hook-settings ()
-  ;; (setq-local +format-with-lsp nil)
-  (setq-local lsp-format-buffer-on-save t)
-  (setq c-basic-offset 4))
-(add-hook! '(c-mode-hook c-ts-mode-hook c++-mode-hook c++-ts-mode-hook)
-           #'my-c-hook-settings)
 
 (map! :after evil
       :map evil-normal-state-map
