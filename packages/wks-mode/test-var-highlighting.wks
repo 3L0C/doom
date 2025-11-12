@@ -16,6 +16,7 @@
 :bg "#000000"
 :shell "/bin/bash"
 :font "monospace"
+:wrap-cmd "uwsm-app --"
 
 # Integer macros
 :menu-width 800
@@ -49,7 +50,7 @@ d "Path var" %{{cd %(path)}}
 # Test 4: User Variable Interpolations in Descriptions
 # ============================================================================
 
-e "%(app_name) Test" %{{echo test}}
+e "%(app_name) Test" %{{%(wrap_cmd) echo test}}
 f "%(greeting) from %(app_name)" %{{notify-send "%(my_var)"}}
 g "Path: %(path)" %{{ls}}
 

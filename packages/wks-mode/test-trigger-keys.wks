@@ -1,0 +1,131 @@
+# Test file for trigger key highlighting
+# All trigger keys below should be highlighted with font-lock-constant-face
+
+# ============================================================================
+# ASCII Letters (lowercase)
+# ============================================================================
+
+a "Lowercase a" %{{echo a}}
+g "Lowercase g" %{{echo g}}
+z "Lowercase z" %{{echo z}}
+
+# ============================================================================
+# ASCII Letters (uppercase)
+# ============================================================================
+
+A "Uppercase A" %{{echo A}}
+G "Uppercase G" %{{echo G}}
+Z "Uppercase Z" %{{echo Z}}
+
+# ============================================================================
+# ASCII Digits
+# ============================================================================
+
+1 "Digit 1" %{{echo 1}}
+5 "Digit 5" %{{echo 5}}
+9 "Digit 9" %{{echo 9}}
+
+# ============================================================================
+# Punctuation Characters
+# ============================================================================
+
+, "Comma" %{{echo comma}}
+. "Period" %{{echo period}}
+; "Semicolon" %{{echo semicolon}}
+: "Colon" %{{echo colon}}
+! "Exclamation" %{{echo exclaim}}
+? "Question" %{{echo question}}
+- "Dash" %{{echo dash}}
+_ "Underscore" %{{echo underscore}}
+= "Equals" %{{echo equals}}
++ "Plus" %{{echo plus}}
+* "Asterisk" %{{echo asterisk}}
+/ "Slash" %{{echo slash}}
+\ "Backslash" %{{echo backslash}}
+| "Pipe" %{{echo pipe}}
+& "Ampersand" %{{echo ampersand}}
+@ "At sign" %{{echo at}}
+$ "Dollar" %{{echo dollar}}
+% "Percent" %{{echo percent}}
+^ "Caret" %{{echo caret}}
+~ "Tilde" %{{echo tilde}}
+` "Backtick" %{{echo backtick}}
+' "Single quote" %{{echo quote}}
+" "Double quote" %{{echo doublequote}}
+
+# ============================================================================
+# Bracket/Brace Characters
+# ============================================================================
+
+( "Left paren" %{{echo lparen}}
+) "Right paren" %{{echo rparen}}
+{ "Left brace" %{{echo lbrace}}
+} "Right brace" %{{echo rbrace}}
+< "Less than" %{{echo less}}
+> "Greater than" %{{echo greater}}
+
+# ============================================================================
+# Modified Keys (with C-, M-, etc.)
+# ============================================================================
+
+C-a "Control-a" %{{echo C-a}}
+M-x "Meta-x" %{{echo M-x}}
+C-M-g "Control-Meta-g" %{{echo C-M-g}}
+H-h "Hyper-h" %{{echo H-h}}
+S-a "Shift-a" %{{echo S-a}}
+
+# Modified with punctuation
+C-, "Control-comma" %{{echo C-comma}}
+M-. "Meta-period" %{{echo M-period}}
+C-; "Control-semicolon" %{{echo C-semicolon}}
+
+# ============================================================================
+# UTF-8 Characters (if supported)
+# ============================================================================
+
+λ "Lambda" %{{echo lambda}}
+© "Copyright" %{{echo copyright}}
+€ "Euro" %{{echo euro}}
+™ "Trademark" %{{echo trademark}}
+§ "Section" %{{echo section}}
+¶ "Paragraph" %{{echo paragraph}}
+† "Dagger" %{{echo dagger}}
+‡ "Double dagger" %{{echo double-dagger}}
+• "Bullet" %{{echo bullet}}
+… "Ellipsis" %{{echo ellipsis}}
+→ "Right arrow" %{{echo arrow}}
+∀ "For all" %{{echo forall}}
+∃ "Exists" %{{echo exists}}
+∈ "Element of" %{{echo element}}
+∞ "Infinity" %{{echo infinity}}
+
+# ============================================================================
+# Special Keys (TAB, SPC, etc.) - already worked before
+# ============================================================================
+
+TAB "Tab key" %{{echo tab}}
+SPC "Space key" %{{echo space}}
+RET "Return key" %{{echo return}}
+DEL "Delete key" %{{echo delete}}
+ESC "Escape key" %{{echo escape}}
+F1 "Function 1" %{{echo F1}}
+F12 "Function 12" %{{echo F12}}
+
+# ============================================================================
+# Chord Arrays and Prefixes (for completeness)
+# ============================================================================
+
+[abc] "Array of a, b, c" %{{echo %(key)}}
+
+p "Prefix" {
+    a "Nested chord" %{{echo pa}}
+    b "Another nested" %{{echo pb}}
+}
+
+# ============================================================================
+# Comments (trigger keys in comments should NOT be highlighted)
+# ============================================================================
+
+# a "This 'a' should not be highlighted"
+# g "This 'g' should not be highlighted"
+# C-a "This should be all comment face"

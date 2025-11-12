@@ -209,14 +209,14 @@ to prevent syntax elements from being highlighted in comments."
                (group "var")
                (one-or-more space)
                (group (seq "\""
-                          (zero-or-more (or (seq "\\" anything)
-                                           (not (any "\""))))
-                          "\""))
+                           (zero-or-more (or (seq "\\" anything)
+                                             (not (any "\""))))
+                           "\""))
                (one-or-more space)
                (group (seq "\""
-                          (zero-or-more (or (seq "\\" anything)
-                                           (not (any "\""))))
-                          "\""))))
+                           (zero-or-more (or (seq "\\" anything)
+                                             (not (any "\""))))
+                           "\""))))
      (1 font-lock-preprocessor-face)
      (2 font-lock-variable-name-face t)
      (3 font-lock-string-face t))
@@ -224,13 +224,14 @@ to prevent syntax elements from being highlighted in comments."
     ;; Other string macros
     (,(rx (seq ":"
                (group (or "include" "implicit-array-keys"
-                         "fg-key" "fg-delimiter" "fg-prefix"
-                         "fg-chord" "fg" "bg" "bd" "shell" "font"))
+                          "fg-key" "fg-delimiter" "fg-prefix"
+                          "fg-chord" "fg" "bg" "bd" "shell" "font"
+                          "wrap-cmd"))
                (one-or-more space)
                (group (seq "\""
-                          (zero-or-more (or (seq "\\" anything)
-                                           (not (any "\""))))
-                          "\""))))
+                           (zero-or-more (or (seq "\\" anything)
+                                             (not (any "\""))))
+                           "\""))))
      (1 font-lock-preprocessor-face)
      (2 font-lock-string-face))
 
@@ -245,7 +246,7 @@ to prevent syntax elements from being highlighted in comments."
     ;; Positive integer macros
     (,(rx (seq ":"
                (group (or "max-columns" "border-width" "width-padding"
-                         "height-padding" "delay"))
+                          "height-padding" "delay"))
                (one-or-more space)
                (group (one-or-more digit))))
      (1 font-lock-preprocessor-face)
@@ -256,7 +257,7 @@ to prevent syntax elements from being highlighted in comments."
                (group "border-radius")
                (one-or-more space)
                (group (seq (one-or-more digit)
-                          (zero-or-more (seq "." (one-or-more digit)))))))
+                           (zero-or-more (seq "." (one-or-more digit)))))))
      (1 font-lock-preprocessor-face)
      (2 font-lock-constant-face))))
 
@@ -270,12 +271,12 @@ variables."
     ((lambda (limit)
        (wks--match-unless-comment
         (rx (group (seq "%("
-                       (or "key"
-                           "index+1" "index"
-                           "desc^^" "desc^"
-                           "desc,," "desc,"
-                           "desc")
-                       ")")))
+                        (or "key"
+                            "index+1" "index"
+                            "desc^^" "desc^"
+                            "desc,," "desc,"
+                            "desc" "wrap_cmd")
+                        ")")))
         limit))
      (1 font-lock-constant-face prepend))
 
@@ -335,12 +336,12 @@ variables."
   "Font-lock patterns for strings."
   `(
     ;; Strings (descriptions and other quoted text)
-    ;; Use :keep to not override interpolations already highlighted
+    ;; Use keep to not override interpolations already highlighted
     (,(rx (seq "\""
                (zero-or-more (or (seq "\\" anything)
-                                (not (any "\""))))
+                                 (not (any "\""))))
                "\""))
-     (0 font-lock-string-face :keep))))
+     (0 font-lock-string-face keep))))
 
 (defun wks--font-lock-misc ()
   "Font-lock patterns for miscellaneous syntax."

@@ -54,14 +54,16 @@
 
 (after! lsp-mode
   ;; (setq lsp-clangd-binary-path (executable-find "clangd"))
-  (setq lsp-clangd-binary-path "/nix/store/7l6wv859y0clr9xaql2v5ryw53ds8wzq-clang-tools-21.1.2/bin/clangd"))
+  (setq lsp-clangd-binary-path "/nix/store/7l6wv859y0clr9xaql2v5ryw53ds8wzq-clang-tools-21.1.2/bin/clangd")
+  (setq lsp-format-buffer-on-save t))
 (add-hook! 'c-mode-common-hook
            (modify-syntax-entry ?_ "w"))
 (setq c-tab-always-indent nil)
 (defconst my-c++-style
   '("bsd"
     (c-basic-offset . 4)
-    (c-hanging-braces-alist . ((arglist-close before)))
+    (c-hanging-braces-alist . ((substatement-open before)
+                               (arglist-close before)))
     (c-offsets-alist . ((namespace-open . 0)
                         (innamespace . 0)
                         (label . -)
@@ -82,7 +84,7 @@
          c-basic-offset 4
          c-ts-mode-indent-offset 4
          tab-width 4))
-(add-hook! 'c++-mode-hook 'my-c++-mode-hook)
+(add-hook! '(c++-mode-hook c++-ts-mode-hook) 'my-c++-mode-hook)
 (c-add-style "my-c++-style" my-c++-style)
 (setq! c-default-style "my-c++-style"
        c-ts-mode-indent-style 'bsd
@@ -606,9 +608,9 @@
             ;; #'smartparens-mode
             (setq-local fill-column 60)
             (spell-fu-mode -1))
-(add-hook! doom-switch-buffer
-  (when (eq major-mode 'vterm-mode)
-    (evil-collection-vterm-insert)))
+;; (add-hook! doom-switch-buffer
+;;   (when (eq major-mode 'vterm-mode)
+;;     (evil-collection-vterm-insert)))
 ;; (advice-add '+vterm/toggle :around
 ;;             (lambda (fn &rest args) (apply fn args)
 ;;               (when (eq major-mode 'vterm-mode)
@@ -815,9 +817,10 @@
       :desc "Zap up to char" "Z" #'zap-up-to-char)
 
 (defun my-c-hook-settings ()
-  (setq-local +format-with-lsp nil)
+  ;; (setq-local +format-with-lsp nil)
+  (setq-local lsp-format-buffer-on-save t)
   (setq c-basic-offset 4))
-(add-hook! '(c-mode-hook c++-mode-hook)
+(add-hook! '(c-mode-hook c-ts-mode-hook c++-mode-hook c++-ts-mode-hook)
            #'my-c-hook-settings)
 
 (map! :after evil
@@ -857,6 +860,11 @@
 
 (evil-global-set-key 'insert (kbd "M-v") 'evil-paste-before)
 (evil-global-set-key 'insert (kbd "C-e") 'evil-scroll-line-to-center)
+
+(map! :leader
+      "v" #'helpful-variable
+      "F" #'helpful-callable
+      "K" #'helpful-key)
 
 (map! :after evil
       :map evil-normal-state-map
