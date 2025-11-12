@@ -482,20 +482,28 @@ This function is adapted from `zig-mode'."
 (defun wks-compile ()
   "Compile the current wks file with wk --transpile."
   (interactive)
-  (if buffer-file-name
-      (compile (format "%s --transpile %s"
-                       wks-command
-                       (shell-quote-argument buffer-file-name)))
-    (message "Buffer is not visiting a file")))
+  (cond
+   ((not buffer-file-name)
+    (user-error "Buffer is not visiting a file"))
+   ((not (executable-find wks-command))
+    (user-error "Cannot find wk command: %s" wks-command))
+   (t
+    (compile (format "%s --transpile %s"
+                     wks-command
+                     (shell-quote-argument buffer-file-name))))))
 
 (defun wks-run ()
   "Run wk with the current file as key chords."
   (interactive)
-  (if buffer-file-name
-      (compile (format "%s --key-chords %s"
-                       wks-command
-                       (shell-quote-argument buffer-file-name)))
-    (message "Buffer is not visiting a file")))
+  (cond
+   ((not buffer-file-name)
+    (user-error "Buffer is not visiting a file"))
+   ((not (executable-find wks-command))
+    (user-error "Cannot find wk command: %s" wks-command))
+   (t
+    (compile (format "%s --key-chords %s"
+                     wks-command
+                     (shell-quote-argument buffer-file-name))))))
 
 ;;; Completion
 
@@ -547,7 +555,7 @@ REPORT-FN is a callback function to report diagnostics."
   (unless (executable-find wks-command)
     (error "Cannot find wk command: %s" wks-command))
   (let* ((source (current-buffer))
-         (temp-file (make-temp-file "wks-flymake" nil ".wks")))
+         (temp-file (make-nearby-temp-file "wks-flymake" nil ".wks")))
     (save-restriction
       (widen)
       (write-region (point-min) (point-max) temp-file nil 'silent))
