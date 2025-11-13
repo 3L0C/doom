@@ -41,8 +41,8 @@
 # Test 3: User Variable Interpolations in Commands
 # ============================================================================
 
-a "Test greeting" %{{echo %(greeting)}}
-b "Test my_var" %{{echo %(my_var)}}
+a "Test greeting" +wrap "test" %{{echo %(greeting)}}
+b "Test my_var" +unwrap %{{echo %(my_var)}}
 c "Multiple vars" %{{echo %(greeting) %(my_var) %(app_name)}}
 d "Path var" %{{cd %(path)}}
 

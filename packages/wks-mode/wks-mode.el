@@ -191,7 +191,8 @@ to prevent syntax elements from being highlighted in comments."
                (group (or "keep" "close" "inherit" "execute"
                           "ignore" "ignore-sort" "unhook"
                           "deflag" "no-before" "no-after"
-                          "write" "sync-command"))))
+                          "write" "sync-command"
+                          "wrap" "unwrap"))))
      (1 'default)
      (2 font-lock-keyword-face))))
 

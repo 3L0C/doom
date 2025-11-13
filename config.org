@@ -6,42 +6,97 @@
 
 * Table of Contents :toc:
 - [[#general-notes][General Notes]]
-  - [[#functions][Functions]]
 - [[#packages][Packages]]
   - [[#org][Org]]
-  - [[#gptel][GPTEL]]
   - [[#zen][Zen]]
-  - [[#hyprlang][Hyprlang]]
+  - [[#centered-cursor-mode][Centered Cursor Mode]]
 - [[#settings][Settings]]
   - [[#auto-revert][Auto revert]]
   - [[#cc-configuration][C/C++ configuration]]
-  - [[#cc-configuration-old---for-testing][C/C++ configuration (OLD - for testing)]]
   - [[#nix-configuration][Nix configuration]]
   - [[#lua-configuration][Lua configuration]]
-  - [[#javascript-configuration][Javascript configuration]]
   - [[#doom-dashboard][Doom dashboard]]
-  - [[#trash-files][Trash files]]
-  - [[#misc][Misc.]]
-- [[#keymaps][Keymaps]]
+  - [[#spell-fu][Spell-Fu]]
+  - [[#yaml][YAML]]
+  - [[#tramp][TRAMP]]
+  - [[#corfu][Corfu]]
+  - [[#cape][Cape]]
+  - [[#lsp][LSP]]
+  - [[#org-roam][Org-Roam]]
+  - [[#evil][Evil]]
+  - [[#indent-bars][Indent-Bars]]
+  - [[#look-and-feel][Look and Feel]]
+  - [[#vterm][Vterm]]
   - [[#leader-key][Leader key]]
   - [[#buffers][Buffers]]
   - [[#ibuffer][Ibuffer]]
-  - [[#dired][Dired]]
-  - [[#dired-peep][Dired peep]]
-  - [[#re-maps][Re-maps]]
+  - [[#dired-and-dirvish][Dired and Dirvish]]
+  - [[#registers][Registers]]
+  - [[#projectile][Projectile]]
+  - [[#eshell][Eshell]]
+  - [[#windows][Windows]]
+  - [[#editing][Editing]]
+  - [[#workspaces][Workspaces]]
+  - [[#quitsession][Quit/Session]]
+  - [[#toggle][Toggle]]
+  - [[#help-remaps][Help Remaps]]
+  - [[#disable-cursor-nudging-in-terminal-buffers][Disable cursor nudging in terminal buffers]]
+  - [[#advice][Advice]]
+  - [[#debugger][Debugger]]
+  - [[#fixes][Fixes]]
+  - [[#misc][Misc.]]
+- [[#retired][Retired]]
+  - [[#functions][Functions]]
+  - [[#gptel][GPTEL]]
+  - [[#hyprlang][Hyprlang]]
+  - [[#cc-configuration-old---for-testing][C/C++ configuration (OLD - for testing)]]
+  - [[#javascript-configuration][Javascript configuration]]
+  - [[#tree-sitter][Tree-sitter]]
+  - [[#word-wrapp][Word wrapp]]
+  - [[#smartparens][Smartparens]]
 
 * General Notes
+
 This config uses ',' as the leader key and 'SPC' as the
 local leader. Now on with the show!
 
-** Functions
-Please see funcs.org for more info
 #+begin_src emacs-lisp
-(load! "funcs.el")
+;;; config.el -*- lexical-binding: t; -*-
+;; Load custom utility functions
+(load! "funcs")
 #+end_src
 
 * Packages
+
 ** Org
+
+*** Maps
+
+#+begin_src emacs-lisp
+(map! :after org
+      :leader
+      :desc "Find node" "f n" #'org-roam-node-find
+      "n l" nil
+      (:prefix ("n" . "notes")
+               (:prefix ("l" . "links")
+                :desc "Yank link"  "y" #'org-store-link
+                :desc "Paste link" "p" #'org-insert-link)))
+(map! :after org
+      :localleader
+      (:prefix ("l" . "links")
+               (:prefix ("r" . "references")
+                :desc "URL"          "u" #'+my/org-insert-link-from-clipboard
+                :desc "ID"           "i" #'+my/org-add-id-link
+                :desc "ID +desc"     "I" #'+my/org-add-id-link-desc
+                :desc "Header"       "h" #'+my/org-add-header-link
+                :desc "Header +desc" "H" #'+my/org-add-header-link-desc))
+      (:prefix ("H" . "Help")
+       :desc "Org Entities" "e" #'org-entities-help)
+      (:prefix ("SPC" . "mine")
+               (:prefix ("t" . "toggle")
+                :desc "Pretty entities" "p" #'org-toggle-pretty-entities)
+               :desc "LaTeX" "l" #'org-latex-preview))
+#+end_src
 
 *** Looks
 
@@ -56,17 +111,13 @@ Please see funcs.org for more info
   "List of directories to search for PDF files.")
 (defvar cb/pdf-files-cache nil
   "Cache of PDF files found in `cb/pdf-directories`.")
-;; (run-with-idle-timer 600 t #'cb/update-pdf-files-cache)
 (after! org
-  (org-link-set-parameters "pdf" :follow #'org-pdf-link-follow-link)
+  (org-link-set-parameters "pdf" :follow #'+my/org-pdf-link-follow)
   (add-to-list 'org-modules 'ol-info)
   (setq! org-hide-emphasis-markers t
          org-startup-with-inline-images t
-         ;; org-pretty-entities t
-         ;; org-image-actual-width t
          org-indent-indentation-per-level 1
-         org-format-latex-options (plist-put org-format-latex-options
-                                             :scale 2.0)))
+         org-format-latex-options (plist-put org-format-latex-options :scale 2.0)))
 #+end_src
 
 *** Auto Tangle
@@ -76,46 +127,35 @@ Please see funcs.org for more info
   :defer t
   :hook (org-mode . org-auto-tangle-mode)
   :config
-  (setq org-auto-tangle-default t))
-#+end_src
-
-** GPTEL
-
-#+begin_src emacs-lisp
-; Meta-Llama-3-8B-Instruct.Q4_0.gguf
-;; OPTIONAL configuration
-;; (setq
-;;  gptel-max-tokens 4096
-;;  gptel-model "Meta-Llama-3-8B-Instruct.Q4_0.gguf"
-;;  gptel-backend (gptel-make-gpt4all "GPT4All"
-;;                  :protocol "http"
-;;                  :host "localhost:4891"
-;;                  :models '("Meta-Llama-3-8B-Instruct.Q4_0.gguf"
-;;                            "Nous-Hermes-2-Mistral-7B-DPO.Q4_0.gguf"
-;;                            "gpt4all-falcon-newbpe-q4_0.gguf")))
+  (setq! org-auto-tangle-default t))
 #+end_src
 
 ** Zen
 
 #+begin_src emacs-lisp
 (after! (mixed-pitch writeroom-mode)
-  (setq +zen-text-scale 1))
+  (setq! +zen-text-scale 1))
 #+end_src
 
-** Hyprlang
+** Centered Cursor Mode
 
 #+begin_src emacs-lisp
-;; (use-package hyprlang-ts-mode
-;;   :custom
-;;   (hyprlang-ts-mode-indent-offset 4))
+(use-package! centered-cursor-mode
+  :hook ((prog-mode text-mode conf-mode) . centered-cursor-mode))
+;; (after! centered-cursor-mode
+;;   (add-hook! (prog-mode text-mode conf-mode)
+;;              :append #'centered-cursor-mode))
 #+end_src
 
 * Settings
+
 ** Auto revert
+
 See docs [[info:emacs#Auto Revert][here]]
+
 #+begin_src emacs-lisp
 (global-auto-revert-mode 1)
-(setq global-auto-revert-non-file-buffers t)
+(setq! global-auto-revert-non-file-buffers t)
 #+end_src
 
 ** C/C++ configuration
@@ -123,86 +163,496 @@ Some retarded settings for C/C++ mode. See [[my-c++-mode-hook]]
 for more info.
 
 #+begin_src emacs-lisp
+(add-hook! '(c-mode-common-hook c-ts-mode-hook c++-ts-mode-hook)
+  (modify-syntax-entry ?_ "w"))
+(add-hook! '(c-ts-mode-hook c++-ts-mode-hook)
+           (setq-local indent-bars-spacing 4)
+           (setq! c-ts-mode-indent-offset 4
+                  c-ts-mode-indent-style 'bsd))
+#+end_src
+
+** Nix configuration
+
+#+begin_src emacs-lisp
+;; (after! (:or nix-mode nix-ts-mode)
+;;   (add-hook! '(nix-mode-hook nix-ts-mode-hook)
+;;              (setq-local tab-width 2)))
+(add-hook! '(nix-mode-hook nix-ts-mode-hook)
+  (setq-local tab-width 2))
+#+end_src
+
+** Lua configuration
+
+#+begin_src emacs-lisp
+;; (after! (:or lua-mode lua-ts-mode)
+;;   (add-hook! '(lua-mode-hook lua-ts-mode-hook)
+;;     (setq-local corfu-auto-delay 0.2)
+;;     (setq-local lua-indent-level 4)
+;;     (setq-local lua-indent-nested-block-content-align nil)))
+
+(add-hook! '(lua-mode-hook lua-ts-mode-hook)
+  (setq-local corfu-auto-delay 0.2
+              lua-indent-level 4
+              lua-indent-nested-block-content-align nil))
+#+end_src
+
+** Doom dashboard
+#+begin_src emacs-lisp
+(setq! +doom-dashboard-pwd-policy "~/"
+       fancy-splash-image "~/.config/doom/doom-emacs-dash.png")
+#+end_src
+
+** Spell-Fu
+
+#+begin_src emacs-lisp
+(after! spell-fu
+  ;; TODO workround for https://github.com/doomemacs/doomemacs/issues/6246
+  (unless ispell-dictionary
+    (setq! ispell-dictionary "en"))
+  (unless (file-exists-p ispell-personal-dictionary)
+    (make-directory (file-name-directory ispell-personal-dictionary) t)
+    (with-temp-file ispell-personal-dictionary
+      (insert (format "personal_ws-1.1 %s 0\n" ispell-dictionary)))))
+#+end_src
+
+** YAML
+
+#+begin_src emacs-lisp
+(add-hook! yaml-mode
+  (spell-fu-mode -1))
+#+end_src
+
+** TRAMP
+
+#+begin_src emacs-lisp
+(add-hook! tramp-mode
+  (setq-local tramp-terminal-type "tramp"))
+#+end_src
+
+** Corfu
+
+#+begin_src emacs-lisp
+(add-hook! '(prog-mode-hook
+             text-mode-hook
+             conf-mode-hook
+             comint-mode-hook
+             minibuffer-setup-hook
+             eshell-mode-hook)
+           #'+corfu-add-cape-file-h)
+(after! corfu
+  (setq! corfu-preselect 'prompt
+         +corfu-want-ret-to-confirm t
+         corfu-quit-at-boundary 'separator
+         corfu-auto-prefix 2
+         corfu-quit-no-match 'separator
+         ;; cape-file-directory-must-exist t
+         +corfu-want-tab-prefer-navigating-snippets nil
+         ;; +corfu-want-tab-prefer-navigating-org-tables t
+         +corfu-want-minibuffer-completion nil
+         corfu-preview-current 'insert
+         corfu-auto-delay 0.2))
+(map! :after corfu
+      :map corfu-map
+      "S-SPC" #'corfu-insert-separator
+      "C-g" #'corfu-quit)
+#+end_src
+
+** Cape
+
+#+begin_src emacs-lisp
+(map! :after cape
+      (:prefix ("C-x c" . "cape")
+       :desc "cape-file" :i "f" #'cape-file
+       :desc "cape-dict" :i "d" #'cape-dict
+       :desc "cape-dabbrev" :i "b" #'cape-dabbrev)
+      :i "C-/" #'cape-file)
+#+end_src
+
+** LSP
+
+#+begin_src emacs-lisp
 (after! lsp-mode
   ;; Disable auto-download of language servers (incompatible with NixOS)
-  (setq lsp-enable-suggest-server-download nil
-        ;; Let lsp-mode find clangd from PATH (after direnv loads)
-        lsp-format-buffer-on-save t))
-(add-hook! 'c-mode-common-hook
-           (modify-syntax-entry ?_ "w"))
-(setq c-tab-always-indent nil)
-(defconst my-c++-style
-  '("bsd"
-    (c-basic-offset . 4)
-    (c-hanging-braces-alist . ((substatement-open before)
-                               (arglist-close before)))
-    (c-offsets-alist . ((namespace-open . 0)
-                        (innamespace . 0)
-                        (label . -)
-                        (access-label . -)
-                        (inclass . +)
-                        (substatement-label . 0)
-                        (case-label . 0)
-                        (arglist-intro . +)
-                        ;; (arglist-cont . +)
-                        ;; (arglist-cont-nonempty . +)
-                        (arglist-close . 0)))))
-;; Hook for traditional CC Mode (c-mode, c++-mode)
-(defun my-c/c++-mode-hook ()
-  "Common settings for C and C++ modes (CC Mode only)."
-  ;; Register and apply style immediately (buffer-local)
-  (c-add-style "my-c++-style" my-c++-style t)
-  ;; Other buffer-local settings
-  (setq-local c-basic-offset 4
-              tab-width 4)
-  ;; Fix indent-bars spacing
-  (when (bound-and-true-p indent-bars-mode)
-    (setq-local indent-bars-spacing 4)
-    (indent-bars-reset)))
+  (setq! lsp-enable-suggest-server-download nil
+         lsp-format-buffer-on-save t
+         lsp-signature-doc-lines 5))
+#+end_src
 
-;; Hook for tree-sitter modes (c-ts-mode, c++-ts-mode)
-(defun my-c/c++-ts-mode-hook ()
-  "Common settings for C and C++ tree-sitter modes."
-  ;; Tree-sitter modes don't use CC Mode styles, so skip c-add-style
-  (setq-local c-ts-mode-indent-offset 4
-              c-basic-offset 4
-              tab-width 4
-              c-ts-mode-indent-style 'bsd)
-  ;; Fix indent-bars spacing
-  (when (bound-and-true-p indent-bars-mode)
-    (setq-local indent-bars-spacing 4)
-    (indent-bars-reset)))
+** Org-Roam
 
-;; Add hooks separately based on mode type
-(add-hook! '(c-mode-hook c++-mode-hook)
-           #'my-c/c++-mode-hook)
-(add-hook! '(c-ts-mode-hook c++-ts-mode-hook)
-           #'my-c/c++-ts-mode-hook)
-(after! lsp-clangd
-  (setq lsp-clients-clangd-args
-        '("-j=3"
-          "--background-index"
-          "--clang-tidy"
-          "--completion-style=detailed"
-          "--header-insertion=never"
-          "--header-insertion-decorators=0"))
-  (set-lsp-priority! 'clangd 2))
-;; (after! ccls
-;;   (setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
-;;   (set-lsp-priority! 'ccls 1))
+#+begin_src emacs-lisp
+(after! org-roam
+  (setq! org-roam-directory "~/ewiki"
+         org-roam-completion-everywhere nil
+         org-roam-capture-templates
+         '(("d" "default" plain "%?"
+            :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
+            :unnarrowed t))))
+(defun my/org-writing-mode-setup ()
+  "Configure writing-friendly settings"
+  (auto-fill-mode 1)
+  (setq-local fill-column 60)
+  (spell-fu-mode -1))
+(add-hook! '(org-mode-hook org-roam-mode-hook gfm-mode-hook)
+           #'my/org-writing-mode-setup)
+#+end_src
+
+** Evil
+
+#+begin_src emacs-lisp
+(evil-global-set-key 'insert (kbd "M-v") 'evil-paste-before)
+(evil-global-set-key 'insert (kbd "C-e") 'evil-scroll-line-to-center)
+(global-set-key (kbd "C-z") nil)
+(setq! evil-vsplit-window-right t
+       evil-split-window-below t)
+(map! (:leader
+       "h" nil
+       :desc "Help" "H" help-map
+       "h" #'evil-window-left
+       "j" #'evil-window-down
+       "k" #'evil-window-up
+       "l" #'evil-window-right)
+      (:map evil-normal-state-map
+            "C-z"     nil
+            "Z Z" #'doom/save-and-kill-buffer
+            "Z Q" #'kill-current-buffer
+            "g b" #'evil-jump-backward
+            "q q" #'evil-fill-and-move
+            "Q"   #'evil-fill-and-move)
+      (:map evil-motion-state-map
+            "/" #'+default/search-buffer)
+      :im "C-z" nil
+      :im "C-f" #'evil-snipe-f
+      :im "C-S-f" #'evil-snipe-F)
+#+end_src
+
+** Indent-Bars
+
+#+begin_src emacs-lisp
+(add-hook! (prog-mode text-mode conf-mode)
+  :append #'indent-bars-mode)
+#+end_src
+
+** Look and Feel
+
+#+begin_src emacs-lisp
+(setq! doom-theme 'doom-kanagawa-abyss
+       doom-font (font-spec :font "Monospace" :size 15.0)
+       doom-big-font (font-spec :font "Monospace" :size 36)
+       doom-variable-pitch-font (font-spec :font "Sans" :size 15.0)
+       doom-symbol-font (font-spec :font "Monospace" :size 15.0)
+       doom-serif-font (font-spec :font "Serif" :size 15.0)
+       doom-themes-enable-bold t
+       doom-themes-enable-italic t
+       doom-kanagawa-abyss-brighter-comments t
+       doom-kanagawa-abyss-red-cursor t
+       doom-kanagawa-abyss-match-org-blocks t
+       doom-kanagawa-dragon-match-org-blocks t
+       doom-kanagawa-lotus-match-org-blocks t
+       doom-kanagawa-wave-match-org-blocks t
+       display-line-numbers-type nil
+       doom-modeline-height 25
+       doom-modeline-bar-width 5
+       doom-modeline-persp-name t
+       doom-modeline-persp-icon t)
+(set-face-attribute 'mode-line nil :font "Monospace")
+(map! :leader
+      :desc "Load new theme" "H t" #'consult-theme)
+#+end_src
+
+** Vterm
+
+#+begin_src emacs-lisp
+(map! (:leader
+       :desc "Vterm popup toggle" "t t" #'+vterm/toggle
+       :desc "Open vterm" "t v" #'+vterm/here)
+      :map vterm-mode-map
+      :i "<S-return>" #'+my/vterm-send-shift-enter)
+(after! vterm
+  (setq! vterm-max-scrollback 100000))
+;; Insert when switching to vterm buffer
+;; (add-hook! doom-switch-buffer
+;;   (when (eq major-mode 'vterm-mode)
+;;     (evil-collection-vterm-insert)))
+#+end_src
+
+** Leader key
+
+#+begin_src emacs-lisp
+(setq! doom-leader-key ","
+       doom-leader-alt-key "M-,"
+       doom-localleader-key "SPC"
+       doom-localleader-alt-key "M-SPC")
+#+end_src
+
+** Buffers
+
+#+begin_src emacs-lisp
+(map! :leader
+      (:prefix ("b" . "buffer")
+       :desc "Clone buffer other window" "c" #'clone-indirect-buffer-other-window
+       :desc "List bookmarks" "L" #'list-bookmarks
+       :desc "Save current bookmarks to bookmark file" "w" #'bookmark-save)
+       (:prefix ("f" . "file")
+        :desc "Rename" "r" #'rename-visited-file))
+#+end_src
+
+** Ibuffer
+
+#+begin_src emacs-lisp
+(evil-define-key 'normal ibuffer-mode-map
+        (kbd "f c") 'ibuffer-filter-by-content
+        (kbd "f d") 'ibuffer-filter-by-directory
+        (kbd "f f") 'ibuffer-filter-by-filename
+        (kbd "f m") 'ibuffer-filter-by-mode
+        (kbd "f n") 'ibuffer-filter-by-name
+        (kbd "f x") 'ibuffer-filter-disable
+        (kbd "g h") 'ibuffer-do-kill-lines
+        (kbd "g H") 'ibuffer-update)
+#+end_src
+
+** Dired and Dirvish
+
+#+begin_src emacs-lisp
+(after! dired
+  (setq dired-listing-switches "-ahvl --group-directories-first"))
+(add-hook! 'dired-mode-hook (dired-hide-details-mode))
+(map! :leader
+      (:prefix ("d" . "dired")
+       :desc "Dirvish side" "j" #'dirvish-side)
+      (:after dired
+       (:map dired-mode-map
+        :desc "Peep-dired image previews" "d p" #'peep-dired
+        :desc "Dired view file" "d v" #'dired-view-file)))
+(evil-define-key 'normal peep-dired-mode-map
+  (kbd "j") 'peep-dired-next-file
+  (kbd "k") 'peep-dired-prev-file)
+(add-hook! 'peep-dired-hook #'evil-normalize-keymaps)
+(map! :after dirvish
+      :map dirvish-mode-map
+      :n "l" #'dired-find-alternate-file)
+#+end_src
+
+** Registers
+
+#+begin_src emacs-lisp
+(map! :leader
+      (:prefix ("r" . "registers")
+       :desc "Copy to register" "c" #'copy-to-register
+       :desc "Frameset to register" "f" #'frameset-to-register
+       :desc "Insert contents of register" "i" #'insert-register
+       :desc "Jump to register" "j" #'jump-to-register
+       :desc "List registers" "l" #'list-registers
+       :desc "Number to register" "n" #'number-to-register
+       :desc "Interactively choose a register" "r" #'counsel-register
+       :desc "View a register" "v" #'view-register
+       :desc "Window configuration to register" "w" #'window-configuration-to-register
+       :desc "Increment register" "+" #'increment-register
+       :desc "Point to register" "SPC" #'point-to-register))
+#+end_src
+
+** Projectile
+
+#+begin_src emacs-lisp
+(map! :after projectile
+      :leader
+      "," nil
+      "." nil
+      "<" nil
+      :desc "Switch project buffer" "," #'projectile-switch-to-buffer
+      :desc "Find project file" "." #'projectile-find-file
+      :desc "Find file" ">" #'find-file
+      :desc "Consult project buffer" "<" #'consult-buffer)
+(after! projectile
+  (setq! projectile-buffers-filter-function #'projectile-buffers-with-file-or-process
+         projectile-enable-caching t
+         projectile-files-cache-expire 60))
+
+;; Auto-refresh cache on file changes within Emacs
+(add-hook! 'after-save-hook
+  (when (projectile-project-p)
+    (projectile-invalidate-cache nil)))
+
+(add-hook! 'delete-file-hook
+  (when (projectile-project-p)
+    (projectile-invalidate-cache nil)))
+#+end_src
+
+** Eshell
+
+#+begin_src emacs-lisp
+(map! :leader
+      (:prefix ("e" . "Eshell")
+       :desc "Eshell" "e s" #'eshell
+       :desc "Counsel eshell history" "e h" #'counsel-esh-history))
+#+end_src
+
+** Windows
+
+#+begin_src emacs-lisp
+(map! :leader
+      :desc "Shrink height" "_" (cmd! (evil-window-set-height 20))
+      (:prefix ("w" . "window")
+       :desc "Window enlargen" "i" #'doom/window-enlargen
+       :desc "balance windows" "y" #'balance-windows
+       :desc "Winner redo" "<right>" #'winner-redo
+       :desc "Winner undo" "<left>" #'winner-undo))
+#+end_src
+
+** Editing
+
+#+begin_src emacs-lisp
+(map! :leader
+      :desc "Zap to char" "z" #'zap-to-char
+      :desc "Zap up to char" "Z" #'zap-up-to-char)
+#+end_src
+
+** Workspaces
+
+#+begin_src emacs-lisp
+(map! :leader
+      (:prefix ("TAB" . "workspace")
+       :desc "Workspace Left"         "h" #'+workspace/switch-left
+       :desc "Workspace Right"         "l" #'+workspace/switch-right
+       "s" nil
+       (:prefix ("s" . "switch")
+        :desc "Switch to 1st workspace" "a" #'+workspace/switch-to-0
+        :desc "Switch to 2nd workspace" "r" #'+workspace/switch-to-1
+        :desc "Switch to 3rd workspace" "s" #'+workspace/switch-to-2
+        :desc "Switch to 4th workspace" "t" #'+workspace/switch-to-3
+        :desc "Switch to 5th workspace" "n" #'+workspace/switch-to-4
+        :desc "Switch to 6th workspace" "e" #'+workspace/switch-to-5
+        :desc "Switch to 7th workspace" "i" #'+workspace/switch-to-6
+        :desc "Switch to 8th workspace" "o" #'+workspace/switch-to-7)
+       :desc "Save to workspace file"     "S"   #'+workspace/save
+       :desc "Switch to last workspace"   "TAB" #'+workspace/other
+       :desc "Display tab bar"            "."   #'+workspace/display
+       :desc "List workspaces"            "o"   #'+workspace/switch-to))
+#+end_src
+
+** Quit/Session
+
+#+begin_src emacs-lisp
+(map! :leader
+      (:prefix ("q" . "quit/session")
+       :desc "Quit Emacs"   "e" #'save-buffers-kill-terminal
+       :desc "Delete frame" "q" #'save-buffers-kill-emacs))
+#+end_src
+
+** Toggle
+
+#+begin_src emacs-lisp
+(map! :leader
+      (:prefix ("t" . "toggle")
+       :desc "Toggle line numbers" "L" #'doom/toggle-line-numbers
+       :desc "Toggle lsp server"   "l" #'lsp-workspace-restart))
+#+end_src
+
+** Help Remaps
+
+#+begin_src emacs-lisp
+(map! :leader
+      "v" #'helpful-variable
+      "F" #'helpful-callable
+      "K" #'helpful-key)
+#+end_src
+
+** Disable cursor nudging in terminal buffers
+
+Terminal emulators and shells work better without centered-cursor-mode
+and scroll margins, as they handle their own scrollback and cursor positioning.
+
+#+begin_src emacs-lisp
+(defun my/disable-cursor-nudging-h ()
+  "Disable centered-cursor-mode and scroll margins in current buffer.
+This is useful for terminal emulators and shell buffers where
+cursor centering and margins interfere with the natural scrolling behavior."
+  (centered-cursor-mode -1)
+  (setq-local scroll-margin 0
+              hscroll-margin 0
+              scroll-conservatively 0
+              maximum-scroll-margin 0.0))
+(add-hook! '(vterm-mode-hook
+             eshell-mode-hook
+             shell-mode-hook
+             term-mode-hook
+             comint-mode-hook)
+           #'my/disable-cursor-nudging-h)
+#+end_src
+
+** Advice
+
+*** My/Prompt-For-Buffer-After-Split
+
+#+begin_src emacs-lisp
+;; (defadvice! prompt-for-buffer (&rest _)
+;;   :after '(evil-window-split evil-window-vsplit)
+;;   (consult-buffer))
+(defadvice! my/prompt-for-buffer-after-split (&rest _)
+  :after '(evil-window-split evil-window-vsplit)
+  ;; Only prompt when called interactively by the user
+  (when (and (called-interactively-p 'interactive)
+             (fboundp 'consult-buffer)
+             (not (minibufferp)))
+    (condition-case err
+        (consult-buffer)
+      (quit (message "Buffer selection cancelled"))
+      (error (message "Failed to prompt: %s" err)))))
 #+end_src
 
 #+begin_src emacs-lisp
+(map! :leader
+      "x" nil
+      :desc "Execute" "x" #'execute-extended-command)
+#+end_src
+
+** Debugger
+
+#+begin_src emacs-lisp
+(map! :map dap-mode-map
+      :leader
+      "d b" nil
+      "d d" nil
+      "d e" nil
+      "d t" nil
+      (:prefix ("d" . "dap")
+       ;; basics
+       :desc "dap next"          "n" #'dap-next
+       :desc "dap step in"       "i" #'dap-step-in
+       :desc "dap step out"      "o" #'dap-step-out
+       :desc "dap continue"      "c" #'dap-continue
+       :desc "dap hydra"         "h" #'dap-hydra
+       :desc "dap debug restart" "r" #'dap-debug-restart
+       :desc "dap debug"         "s" #'dap-debug
+       ;; debug
+       (:prefix ("d" . "Debug")
+        :desc "dap debug recent"  "r" #'dap-debug-recent
+        :desc "dap debug last"    "l" #'dap-debug-last)
+       ;; eval
+       (:prefix ("e" . "Eval")
+        :desc "eval"                "e" #'dap-eval
+        :desc "eval region"         "r" #'dap-eval-region
+        :desc "eval thing at point" "s" #'dap-eval-thing-at-point
+        :desc "add expression"      "a" #'dap-ui-expressions-add
+        :desc "remove expression"   "d" #'dap-ui-expressions-remove)
+       ;; breakpoint
+       (:prefix ("b" . "Breakpoint")
+        :desc "dap breakpoint toggle"      "b" #'dap-breakpoint-toggle
+        :desc "dap breakpoint condition"   "c" #'dap-breakpoint-condition
+        :desc "dap breakpoint hit count"   "h" #'dap-breakpoint-hit-condition
+        :desc "dap breakpoint log message" "l" #'dap-breakpoint-log-message)
+       ;; debug
+       (:prefix ("t" . "Template")
+        :desc "dap edit template" "e" #'dap-debug-edit-template)))
+
 ;; close dap-output on exit
 (after! dap-mode
-  ;; (add-hook! 'dap-terminated-hook #'debug-cleanup-output)
   (require 'dap-gdb)
   (require 'dap-lldb)
   (require 'dap-cpptools)
-  (require 'dap-gdb-lldb)
-  (add-hook! 'dap-terminated-hook (call-interactively #'hydra-keyboard-quit))
-  (add-hook! 'dap-stopped-hook (call-interactively #'dap-hydra)))
-  ;; (add-hook! 'dap-ui-many-windows-mode-hook (call-interactively (async-shell-command "notify-send hello!" nil))))
+  (require 'dap-gdb-lldb))
+(add-hook! 'dap-terminated-hook (call-interactively #'hydra-keyboard-quit))
+(add-hook! 'dap-stopped-hook (call-interactively #'dap-hydra))
 (after! gdb-mi
   (setq! gdb-restore-window-configuration-after-quit t))
 (after! dap-mode
@@ -338,6 +788,70 @@ for more info.
          :cwd "${workspaceFolder}")))
 #+end_src
 
+** Fixes
+
+*** Disable Emacs decorations (title bar)
+
+#+begin_src emacs-lisp
+;; Necessary for river wayland compositor
+(setq! default-frame-alist '((undecorated . t)
+                             (vertical-scroll-bars . nil)))
+#+end_src
+
+** Misc.
+
+#+begin_src emacs-lisp
+(setq! undo-limit 80000000                         ; Raise undo-limit to 80Mb
+       auto-save-default t                         ; Nobody likes to lose work, I certainly don't
+       scroll-preserve-screen-position 'always     ; Don't have `point' jump around
+       hscroll-margin 6                            ; It's nice to maintain a little margin
+       scroll-margin 5)                           
+#+end_src
+
+*** Trash files
+
+#+begin_src emacs-lisp
+(setq! delete-by-moving-to-trash t
+       trash-directory "~/.local/share/Trash/files/")
+#+end_src
+
+* Retired
+:PROPERTIES:
+:header-args: :tangle no
+:END:
+
+** Functions
+
+Please see funcs.org for more info
+
+#+begin_src emacs-lisp :tangle no
+(load! "funcs.el")
+#+end_src
+
+** GPTEL
+
+#+begin_src emacs-lisp :tangle no
+; Meta-Llama-3-8B-Instruct.Q4_0.gguf
+;; OPTIONAL configuration
+;; (setq
+;;  gptel-max-tokens 4096
+;;  gptel-model "Meta-Llama-3-8B-Instruct.Q4_0.gguf"
+;;  gptel-backend (gptel-make-gpt4all "GPT4All"
+;;                  :protocol "http"
+;;                  :host "localhost:4891"
+;;                  :models '("Meta-Llama-3-8B-Instruct.Q4_0.gguf"
+;;                            "Nous-Hermes-2-Mistral-7B-DPO.Q4_0.gguf"
+;;                            "gpt4all-falcon-newbpe-q4_0.gguf")))
+#+end_src
+
+** Hyprlang
+
+#+begin_src emacs-lisp :tangle no
+;; (use-package hyprlang-ts-mode
+;;   :custom
+;;   (hyprlang-ts-mode-indent-offset 4))
+#+end_src
+
 ** C/C++ configuration (OLD - for testing)
 :PROPERTIES:
 :header-args: :tangle no
@@ -353,7 +867,7 @@ To test this configuration instead of the new one above:
 #+begin_src emacs-lisp :tangle no
 ;; Common hook for c-mode (applies to both c-mode and c++-mode)
 (add-hook! 'c-mode-common-hook
-           (modify-syntax-entry ?_ "w"))
+  (modify-syntax-entry ?_ "w"))
 (setq c-tab-always-indent nil)
 
 ;; Style definition (OLD version with typo and fewer settings)
@@ -406,101 +920,61 @@ To test this configuration instead of the new one above:
   (set-lsp-priority! 'clangd 2))
 #+end_src
 
-** Nix configuration
-
-#+begin_src emacs-lisp
-(after! (:or nix-mode nix-ts-mode)
-  (add-hook! (nix-mode nix-ts-mode)
-             (setq-local tab-width 2)))
-#+end_src
-
-** Lua configuration
-
-#+begin_src emacs-lisp
-(after! (:or lua-mode lua-ts-mode)
-  (add-hook! '(lua-mode-hook lua-ts-mode-hook)
-    (setq-local corfu-auto-delay 0.2)
-    (setq-local lua-indent-level 4)
-    (setq-local lua-indent-nested-block-content-align nil)))
+#+begin_src emacs-lisp :tangle no
+(setq! c-tab-always-indent nil)
+(defconst my-c++-style
+  '("bsd"
+    (c-basic-offset . 4)
+    (c-hanging-braces-alist . ((substatement-open before)
+                               (arglist-close before)))
+    (c-offsets-alist . ((namespace-open . 0)
+                        (innamespace . 0)
+                        (label . -)
+                        (access-label . -)
+                        (inclass . +)
+                        (substatement-label . 0)
+                        (case-label . 0)
+                        (arglist-intro . +)
+                        (arglist-cont . +)
+                        (arglist-cont-nonempty . +)
+                        (arglist-close . 0)))))
+;; Hook for traditional CC Mode (c-mode, c++-mode)
+(defun my-c/c++-mode-hook ()
+  "Common settings for C and C++ modes (CC Mode only)."
+  ;; Register and apply style immediately (buffer-local)
+  (c-add-style "my-c++-style" my-c++-style t)
+  ;; Other buffer-local settings
+  (setq! c-basic-offset 4
+         tab-width 4)
+  ;; Fix indent-bars spacing
+  (when (bound-and-true-p indent-bars-mode)
+    (setq! indent-bars-spacing 4)
+    (indent-bars-reset)))
+(add-hook! '(c-mode-hook c++-mode-hook)
+           #'my-c/c++-mode-hook)
+(after! lsp-clangd
+  (setq! lsp-clients-clangd-args
+        '("-j=3"
+          "--background-index"
+          "--clang-tidy"
+          "--completion-style=detailed"
+          "--header-insertion=never"
+          "--header-insertion-decorators=0"))
+  (set-lsp-priority! 'clangd 2))
+;; (after! ccls
+;;   (setq ccls-initialization-options '(:index (:comments 2) :completion (:detailedLabel t)))
+;;   (set-lsp-priority! 'ccls 1))
 #+end_src
 
 ** Javascript configuration
-#+begin_src emacs-lisp
+
+#+begin_src emacs-lisp :tangle no
 (after! rjsx-mode
   (setq! js-indent-level 4))
 #+end_src
 
-
-** Doom dashboard
-#+begin_src emacs-lisp
-(setq +doom-dashboard-pwd-policy "~/"
-      fancy-splash-image "~/.config/doom/doom-emacs-dash.png")
-#+end_src
-
-** Trash files
-#+begin_src emacs-lisp
-(setq delete-by-moving-to-trash t
-      trash-directory "~/.local/share/Trash/files/")
-#+end_src
-
-** Misc.
-
-*** Disable Emacs decorations (title bar)
-
-#+begin_src emacs-lisp
-(setq! default-frame-alist '((undecorated . t)
-                             (vertical-scroll-bars . nil)))
-#+end_src
-
-*** Centered Cursor Mode
-
-#+begin_src emacs-lisp
-(use-package! centered-cursor-mode)
-(after! centered-cursor-mode
-  (add-hook! (prog-mode text-mode conf-mode)
-             :append #'centered-cursor-mode))
-#+end_src
-
-*** Spell-Fu
-
-#+begin_src emacs-lisp
-(after! spell-fu
-  ;; TODO workround for https://github.com/doomemacs/doomemacs/issues/6246
-  (unless ispell-dictionary
-    (setq ispell-dictionary "en"))
-  (unless (file-exists-p ispell-personal-dictionary)
-    (make-directory (file-name-directory ispell-personal-dictionary) t)
-    (with-temp-file ispell-personal-dictionary
-      (insert (format "personal_ws-1.1 %s 0\n" ispell-dictionary)))))
-#+end_src
-
-*** YAML
-
-#+begin_src emacs-lisp
-(add-hook! yaml-mode
-           (spell-fu-mode -1))
-#+end_src
-
-*** TRAMP
-
-#+begin_src emacs-lisp
-(setq! tramp-terminal-type "tramp")
-#+end_src
-
-*** Smartparens
-
-#+begin_src emacs-lisp
-(after! smartparens
-  (show-smartparens-global-mode t))
-#+end_src
-
-*** Word wrapp
-#+begin_src emacs-lisp
-(setq +word-wrap-extra-indent nil)
-#+end_src
-
-*** Tree-sitter
-#+begin_src emacs-lisp
+** Tree-sitter
+#+begin_src emacs-lisp :tangle no
 ;; (add-to-list '+tree-sitter-hl-enabled-modes 'c++-mode t)
 ;; (after! tree-sitter
 ;;   (global-tree-sitter-mode)
@@ -510,72 +984,30 @@ To test this configuration instead of the new one above:
 ;; (setq +tree-sitter-hl-enabled-modes t)
 #+end_src
 
-*** corfu
-#+begin_src emacs-lisp
-(after! corfu
-  (setq! corfu-preselect 'prompt
-         +corfu-want-ret-to-confirm t
-         corfu-quit-at-boundary 'separator
-         corfu-auto-prefix 2
-         corfu-quit-no-match 'separator
-         ;; cape-file-directory-must-exist t
-         +corfu-want-tab-prefer-navigating-snippets nil
-         ;; +corfu-want-tab-prefer-navigating-org-tables t
-         +corfu-want-minibuffer-completion nil
-         corfu-preview-current 'insert
-         corfu-auto-delay 0.2)
-  (map! :map corfu-map
-        :i "S-SPC" #'corfu-insert-separator))
+** Word wrapp
+
+#+begin_src emacs-lisp :tangle no
+(setq! +word-wrap-extra-indent nil)
 #+end_src
 
-*** cape
-#+begin_src emacs-lisp
-(after! (corfu cape)
-  (add-hook! '(prog-mode-hook
-               text-mode-hook
-               conf-mode-hook
-               comint-mode-hook
-               minibuffer-setup-hook
-               eshell-mode-hook)
-             #'+corfu-add-cape-file-h))
+** Smartparens
+
+#+begin_src emacs-lisp :tangle no
+(after! smartparens
+  (show-smartparens-global-mode t)
+  ;; Fix closing brace indentation for all modes
+  (sp-local-pair 'prog-mode "{" nil
+                 :post-handlers '(("||\n[i]" "RET")
+                                  ("| " "SPC")))
+  (sp-local-pair 'prog-mode "[" nil
+                 :post-handlers '(("||\n[i]" "RET")
+                                  ("| " "SPC")))
+  (sp-local-pair 'prog-mode "(" nil
+                 :post-handlers '(("||\n[i]" "RET")
+                                  ("| " "SPC"))))
 #+end_src
 
-*** LSP
-#+begin_src emacs-lisp
-(setq lsp-signature-doc-lines 5)
-#+end_src
-
-#+begin_src emacs-lisp
-(setq undo-limit 80000000                         ; Raise undo-limit to 80Mb
-      auto-save-default t                         ; Nobody likes to loose work, I certainly don't
-      scroll-preserve-screen-position 'always     ; Don't have `point' jump around
-      scroll-margin 5)                            ; It's nice to maintain a little margin
-#+end_src
-
-#+begin_src emacs-lisp
-(setq evil-vsplit-window-right t
-      evil-split-window-below t)
-#+end_src
-
-#+begin_src emacs-lisp
-;; (setq +workspaces-main "master")
-#+end_src
-
-#+begin_src emacs-lisp
-(after! org-roam
-  (setq! org-roam-directory "~/ewiki"
-         org-roam-completion-everywhere nil
-         org-roam-capture-templates
-         '(("d" "default" plain "%?"
-            :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org" "#+title: ${title}\n")
-            :unnarrowed t))))
-          ;; ("n" "ncmpcpp" plain "\n\n* ${title}\n%?"
-          ;;  :target (file+head "%<%Y%m%d%H%M%S>-${slug}.org"
-          ;;                     "#+title: ${title}\n#+filetags:\"ncmpcpp_notes\" \"${title}\" \"ncurses\"\n#+startup: show2levels")
-          ;;  :unnarrowed t))))
-#+end_src
-
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setf (alist-get '(markdown-mode org-mode org-roam-mode) +spell-excluded-faces-alist)
       '(markdown-code-face
         markdown-reference-face
@@ -587,100 +1019,23 @@ To test this configuration instead of the new one above:
         markdown-html-tag-name-face))
 #+end_src
 
-#+begin_src emacs-lisp
-(setq doom-theme 'doom-kanagawa-abyss)
-(add-hook! (prog-mode text-mode conf-mode)
-  :append #'indent-bars-mode)
-
-;; (setq doom-theme 'doom-one)
-;; (add-hook! 'highlight-indent-guides-mode-hook
-;;   (doom/reload-theme))
-;; (add-hook! 'highlight-indent-guides-mode-hook
-;;   (remove-hook! 'highlight-indent-guides-mode-hook
-;;     #'doom/reload-theme))
-;; (setq my-theme-reloaded nil)
-;; (add-hook! '(prog-mode-hook text-mode-hook conf-mode-hook)
-;;            #'doom/reload-theme)
-;; (add-hook! '(prog-mode-hook text-mode-hook conf-mode-hook)
-;;   (remove-hook! '(prog-mode-hook text-mode-hook conf-mode-hook)
-;;     #'doom/reload-theme))
-;; (after! indent-guides
-;;   (setq doom-theme 'doom-kanagawa))
-#+end_src
-
-#+begin_src emacs-lisp
-(setq doom-font (font-spec :font "Monospace" :size 15.0)
-      doom-big-font (font-spec :font "Monospace" :size 36)
-      doom-variable-pitch-font (font-spec :font "Sans" :size 15.0)
-      doom-symbol-font (font-spec :font "Monospace" :size 15.0)
-      doom-serif-font (font-spec :font "Serif" :size 15.0))
-#+end_src
-
-#+begin_src emacs-lisp
-;; (after! doom-themes
-;;   (setq doom-themes-enable-bold t
-;;         doom-themes-enable-italic t
-;;         doom-themes-treemacs-enable-variable-pitch nil
-;;         doom-themes-treemacs-theme 'doom-kanagawa
-;;         doom-kanagawa-brighter-comments t
-;;         doom-kanagawa-red-cursor t
-;;         doom-one-light-brighter-comments t
-;;         doom-one-brighter-comments t))
-
-(after! doom-themes
-  (setq doom-themes-enable-bold t
-        doom-themes-enable-italic t
-        doom-themes-treemacs-enable-variable-pitch nil
-        doom-themes-treemacs-theme 'doom-kanagawa-abyss
-        doom-kanagawa-abyss-brighter-comments t
-        doom-kanagawa-abyss-red-cursor t
-        doom-kanagawa-abyss-match-org-blocks t
-        doom-kanagawa-dragon-match-org-blocks t
-        doom-kanagawa-lotus-match-org-blocks t
-        doom-kanagawa-wave-match-org-blocks t
-        doom-one-light-brighter-comments t
-        doom-one-brighter-comments t))
-#+end_src
-
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (after! treemacs
   (setq! treemacs-width 35
          treemacs-default-visit-action #'treemacs-visit-node-close-treemacs
          treemacs-show-cursor t))
 #+end_src
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (custom-set-faces!
   '(font-lock-comment-face :slant italic))
 #+end_src
 
-#+begin_src emacs-lisp
-(setq display-line-numbers-type nil)
-#+end_src
-
-#+begin_src emacs-lisp
-(set-face-attribute 'mode-line nil :font "Monospace")
-#+end_src
-
-#+begin_src emacs-lisp
-(setq doom-modeline-height 25     ;; sets modeline height
-      doom-modeline-bar-width 5   ;; sets right bar width
-      doom-modeline-persp-name t  ;; adds perspective name to modeline
-      doom-modeline-persp-icon t) ;; adds folder icon next to persp name
-#+end_src
-
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (xterm-mouse-mode 1)
 #+end_src
 
-#+begin_src emacs-lisp
-(after! vterm
-  (setq vterm-max-scrollback 100000))
-;; (setq shell-file-name "/bin/zsh"
-;;       vterm-max-scrollback 5000)
-#+end_src
-
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (setq eshell-aliases-file "~/.config/doom/eshell/aliases"
       eshell-history-size 5000
       eshell-buffer-maximum-lines 5000
@@ -690,24 +1045,20 @@ To test this configuration instead of the new one above:
       eshell-visual-commands'("bash" "htop" "ssh" "top" "zsh"))
 #+end_src
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 ;; (setq dap-ui-locals-expand-depth t)
 ;; (setq dap-auto-show-output nil)
 ;; (add-hook 'dap-terminated-hook
 ;;           (lambda (arg) (call-interactively #'dap-hydra)))
 #+end_src
 
-#+begin_src emacs-lisp
-(setq hscroll-margin 6)
-#+end_src
-
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (run-after-saving-unix-mode "/bindsrc$" "wkx-update --binds")
 (run-after-saving-unix-mode "/keysrc$" "wkx-update --keys")
 ;; (run-after-saving 'conf-space-mode-hook "/sxhkdrc$" "kill -SIGUSR1 \"$(pidof sxhkd)\"")
 #+end_src
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (add-to-list 'auto-mode-alist '("xresources" . conf-mode))
 (run-after-saving 'conf-mode-hook "/xresources$"
                   "xrdb \"$HOME/.config/x11/xresources\"")
@@ -719,7 +1070,7 @@ To test this configuration instead of the new one above:
 ;;         (shell-command "xrdb \"$HOME/.config/x11/xresources\"")))))
 #+end_src
 
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (run-after-saving-unix-mode "/dunstrc$" "pkill dunst; systemctl --user restart dunst.service")
 ;; (add-hook! 'conf-unix-mode-hook
 ;;   (when (stringp buffer-file-name)
@@ -728,274 +1079,14 @@ To test this configuration instead of the new one above:
 ;;             (shell-command-to-string "systemctl --user restart dunst.service")))))
 #+end_src
 
-#+begin_src emacs-lisp
-;; (setq spell-fu-ignore-modes '(org-mode org-roam-mode))
-;; (after! (:or org org-roam)
-(add-hook! '(org-mode-hook org-roam-mode-hook gfm-mode-hook)
-            #'auto-fill-mode
-            ;; #'smartparens-mode
-            (setq-local fill-column 60)
-            (spell-fu-mode -1))
-;; (add-hook! doom-switch-buffer
-;;   (when (eq major-mode 'vterm-mode)
-;;     (evil-collection-vterm-insert)))
-;; (advice-add '+vterm/toggle :around
-;;             (lambda (fn &rest args) (apply fn args)
-;;               (when (eq major-mode 'vterm-mode)
-;;                 (evil-collection-vterm-insert))))
-#+end_src
-
-* Keymaps
-** Leader key
-Remap leader key
-#+begin_src emacs-lisp
-(setq doom-leader-key ","
-      doom-leader-alt-key "M-,"
-      doom-localleader-key "SPC"
-      doom-localleader-alt-key "M-SPC")
-#+end_src
-
-** Buffers
-#+begin_src emacs-lisp
-(map! :leader
-      "," nil
-      "." nil
-      "<" nil
-      :desc "Switch project buffer" "," #'projectile-switch-to-buffer
-      :desc "Find project file" "." #'projectile-find-file
-      :desc "Find file" ">" #'find-file
-      :desc "Consult project buffer" "<" #'consult-buffer)
-(map! :leader
-      (:prefix ("b" . "buffer")
-       (:prefix ("f" . "file")
-        :desc "Rename" "r" #'rename-visited-file)
-       :desc "List bookmarks" "L" #'list-bookmarks
-       :desc "Save current bookmarks to bookmark file" "w" #'bookmark-save))
-#+end_src
-
-** Ibuffer
-#+begin_src emacs-lisp
-(evil-define-key 'normal ibuffer-mode-map
-        (kbd "f c") 'ibuffer-filter-by-content
-        (kbd "f d") 'ibuffer-filter-by-directory
-        (kbd "f f") 'ibuffer-filter-by-filename
-        (kbd "f m") 'ibuffer-filter-by-mode
-        (kbd "f n") 'ibuffer-filter-by-name
-        (kbd "f x") 'ibuffer-filter-disable
-        (kbd "g h") 'ibuffer-do-kill-lines
-        (kbd "g H") 'ibuffer-update)
-#+end_src
-
-** Dired
-#+begin_src emacs-lisp
-;; With dired-open plugin, you can launch external programs for certain extensions
-;; For example, I set all .png files to open in 'sxiv' and all .mp4 files to open in 'mpv'
-;; (defadvice! +dired--dirvish-find-entry-a (fn &rest args)
-;;   :around #'dirvish-find-entry-a
-;;   (let ((dirvish-reuse-session t))
-;;     (apply fn args)))
-(after! dirvish
-  (map! :map dirvish-mode-map
-        :n "l" #'dired-find-alternate-file))
-  ;; (setq! dirvish-side-auto-close t)
-  ;; (setq! dirvish-reuse-session t)
-  ;; (setq! dired-kill-when-opening-new-dired-buffer t))
-;;   (setq! dirvish-open-with-programs
-;;          (append
-;;           '((("gif" "jpg" "png") "/usr/local/bin/nsxiv" "%f")
-;;             (("pdf") "/usr/bin/sioyek" "--new-window" "%f"))
-;;           dirvish-open-with-programs)))
-;; (setq dired-open-extensions '(("gif" . "nsxiv")
-;;                               ("jpg" . "nsxiv")
-;;                               ("png" . "nsxiv")
-;;                               ("pdf" . "sioyek --new-window")
-;;                               ("mkv" . "mpv")
-;;                               ("mp4" . "mpv")))
-#+end_src
-
-#+begin_src emacs-lisp
-;; Get file icons in dired
-;; "-ahl -v --group-directories-first"
-(add-hook! 'dired-mode-hook
-           ;; 'all-the-icons-dired-mode
-           'dired-hide-details-mode)
-#+end_src
-
-#+begin_src emacs-lisp
-(after! dired
-  (setq dired-listing-switches "-ahvl --group-directories-first"))
-(map! :leader
-      (:prefix ("d" . "dired")
-       :desc "Dirvish side" "j" #'dirvish-side)
-      (:after dired
-       (:map dired-mode-map
-        :desc "Peep-dired image previews" "d p" #'peep-dired
-        :desc "Dired view file" "d v" #'dired-view-file)))
-;; (evil-define-key 'normal dired-mode-map
-;;   (kbd "M-RET") 'dired-display-file
-;;   ;; (kbd "h") 'dired-up-directory
-;;   ;; (kbd "l") 'dired-open-file ; use dired-find-file instead of dired-open.
-;;   (kbd "m") 'dired-mark
-;;   (kbd "t") 'dired-toggle-marks
-;;   (kbd "u") 'dired-unmark
-;;   (kbd "C") 'dired-do-copy
-;;   (kbd "D") 'dired-do-delete
-;;   (kbd "J") 'dired-goto-file
-;;   (kbd "M") 'dired-do-chmod
-;;   (kbd "N") 'dired-do-man
-;;   (kbd "O") 'dired-do-chown
-;;   (kbd "P") 'dired-do-print
-;;   (kbd "R") 'dired-do-rename
-;;   (kbd "T") 'dired-do-touch
-;;   (kbd "Y") 'dired-copy-filenamecopy-filename-as-kill ; copies filename to kill ring.
-;;   (kbd "+") 'dired-create-directory
-;;   (kbd "-") 'dired-up-directory
-;;   (kbd "% l") 'dired-downcase
-;;   (kbd "% u") 'dired-upcase
-;;   (kbd "; d") 'epa-dired-do-decrypt
-;;   (kbd "; e") 'epa-dired-do-encrypt)
-#+end_src
-
-** Dired peep
-#+begin_src emacs-lisp
-(evil-define-key 'normal peep-dired-mode-map
-  (kbd "j") 'peep-dired-next-file
-  (kbd "k") 'peep-dired-prev-file)
-(add-hook 'peep-dired-hook 'evil-normalize-keymaps)
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      :desc "Load new theme" "H t" #'consult-theme)
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      (:prefix ("r" . "registers")
-       :desc "Copy to register" "c" #'copy-to-register
-       :desc "Frameset to register" "f" #'frameset-to-register
-       :desc "Insert contents of register" "i" #'insert-register
-       :desc "Jump to register" "j" #'jump-to-register
-       :desc "List registers" "l" #'list-registers
-       :desc "Number to register" "n" #'number-to-register
-       :desc "Interactively choose a register" "r" #'counsel-register
-       :desc "View a register" "v" #'view-register
-       :desc "Window configuration to register" "w" #'window-configuration-to-register
-       :desc "Increment register" "+" #'increment-register
-       :desc "Point to register" "SPC" #'point-to-register))
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :map dap-mode-map
-      :leader
-      "d b" nil
-      "d d" nil
-      "d e" nil
-      "d t" nil
-      (:prefix ("d" . "dap")
-       ;; basics
-       :desc "dap next"          "n" #'dap-next
-       :desc "dap step in"       "i" #'dap-step-in
-       :desc "dap step out"      "o" #'dap-step-out
-       :desc "dap continue"      "c" #'dap-continue
-       :desc "dap hydra"         "h" #'dap-hydra
-       :desc "dap debug restart" "r" #'dap-debug-restart
-       :desc "dap debug"         "s" #'dap-debug
-       ;; debug
-       (:prefix ("d" . "Debug")
-        :desc "dap debug recent"  "r" #'dap-debug-recent
-        :desc "dap debug last"    "l" #'dap-debug-last)
-       ;; eval
-       (:prefix ("e" . "Eval")
-        :desc "eval"                "e" #'dap-eval
-        :desc "eval region"         "r" #'dap-eval-region
-        :desc "eval thing at point" "s" #'dap-eval-thing-at-point
-        :desc "add expression"      "a" #'dap-ui-expressions-add
-        :desc "remove expression"   "d" #'dap-ui-expressions-remove)
-       ;; breakpoint
-       (:prefix ("b" . "Breakpoint")
-        :desc "dap breakpoint toggle"      "b" #'dap-breakpoint-toggle
-        :desc "dap breakpoint condition"   "c" #'dap-breakpoint-condition
-        :desc "dap breakpoint hit count"   "h" #'dap-breakpoint-hit-condition
-        :desc "dap breakpoint log message" "l" #'dap-breakpoint-log-message)
-       ;; debug
-       (:prefix ("t" . "Template")
-        :desc "dap edit template" "e" #'dap-debug-edit-template)))
-#+end_src
-
-#+begin_src emacs-lisp
-;; (after! projectile
-;;   (setq projectile-project-root-files-bottom-up
-;;         (remove ".git" projectile-project-root-files-bottom-up)))
-(after! projectile
-  (setq projectile-buffers-filter-function #'projectile-buffers-with-file-or-process)
-  (setq projectile-files-cache-expire 60))
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      (:prefix ("e" . "Eshell")
-       :desc "Eshell" "e s" #'eshell
-       :desc "Counsel eshell history" "e h" #'counsel-esh-history))
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      :desc "Vterm popup toggle" "t t" #'+vterm/toggle
-      :desc "Open vterm" "t v" #'my-open-vterm)
-(map! :after vterm
-      :map vterm-mode-map
-      :i "<S-return>" #'vterm-send-shift-enter)
-#+end_src
-
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (defun prefer-horizontal-split ()
   (set-variable 'split-height-threshold nil t)
   (set-variable 'split-width-threshold 40 t)) ; make this as low as needed
 (add-hook! 'markdown-mode-hook 'prefer-horizontal-split)
 #+end_src
 
-#+begin_src emacs-lisp
-;; (map! :leader
-;;       :prefix ("w". "window")
-;;       :desc "Window enlargen" "i" #'doom/window-enlargen
-;;       :desc "balance windows" "y" #'balance-windows
-;;       :desc "Fit window" #'(evil-window-set-height 20))
-(map! :leader
-      :desc "Shrink height" "_" (cmd! (evil-window-set-height 20)))
-(map! :leader
-      (:prefix ("w". "window")
-       :desc "Window enlargen" "i" #'doom/window-enlargen
-       :desc "balance windows" "y" #'balance-windows))
-       ;; :desc "Fit window" "_" (cmd! (evil-window-set-height 20))))
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      :desc "Clone indirect buffer other window" "b c" #'clone-indirect-buffer-other-window)
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      (:prefix ("w" . "window")
-       :desc "Winner redo" "<right>" #'winner-redo
-       :desc "Winner undo" "<left>" #'winner-undo))
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      :desc "Zap to char" "z" #'zap-to-char
-      :desc "Zap up to char" "Z" #'zap-up-to-char)
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :after evil
-      :map evil-normal-state-map
-      "ZZ"      #'doom/save-and-kill-buffer
-      "ZQ"      #'kill-current-buffer)
-#+end_src
-
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (defun toggle-my-theme ()
   "Toggle light and dark themes"
   (interactive)
@@ -1004,166 +1095,7 @@ Remap leader key
     (load-theme 'doom-one t)))
 #+end_src
 
-#+begin_src emacs-lisp
-(map! :leader
-      :desc "Previous workspace"         "TAB h" #'+workspace/switch-left
-      :desc "Previous workspace"         "TAB l" #'+workspace/switch-right
-      :desc "Toggle syntax highlighting" "t h"   #'tree-sitter-hl-mode
-      :desc "Toggle treemacs"            "t r"   #'+treemacs/toggle)
-      ;; :desc "Toggle theme"               "t d"   #'toggle-my-theme)
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      :desc "Quit Emacs"   "q e" #'save-buffers-kill-terminal
-      :desc "Delete frame" "q q" #'save-buffers-kill-emacs)
-#+end_src
-
-#+begin_src emacs-lisp
-;; (map! :localleader
-;;       :map org-mode-map
-;;       (:prefix ("m" . "my maps")
-;;        (:prefix ("e" . "export")
-;;         :desc "Export to gfm" "g" #'org-pandoc-export-to-gfm
-;;         :desc "Export as gfm" "G" #'org-pandoc-export-as-gfm)))
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      (:prefix ("t" . "toggle")
-       :desc "Toggle line numbers" "L" #'doom/toggle-line-numbers
-       :desc "Toggle lsp server"   "l" #'lsp-workspace-restart))
-#+end_src
-
-#+begin_src emacs-lisp
-(evil-global-set-key 'insert (kbd "M-v") 'evil-paste-before)
-(evil-global-set-key 'insert (kbd "C-e") 'evil-scroll-line-to-center)
-#+end_src
-
-** Re-maps
-
-#+begin_src emacs-lisp
-(map! :leader
-      "v" #'helpful-variable
-      "F" #'helpful-callable
-      "K" #'helpful-key)
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :after evil
-      :map evil-normal-state-map
-      "g b"     #'evil-jump-backward
-      "C-z"     nil
-      "q q"     #'evil-fill-and-move
-      "Q"       #'evil-fill-and-move)
-#+end_src
-
-#+begin_src emacs-lisp
-(defadvice! prompt-for-buffer (&rest _)
-  :after '(evil-window-split evil-window-vsplit)
-  (consult-buffer))
-#+end_src
-
-#+begin_src emacs-lisp
-(global-set-key (kbd "C-z") nil)
-(map! :im
-      "C-f" #'evil-snipe-f
-      "C-S-f" #'evil-snipe-F)
-(map! :im "C-z" nil)
-(map! :leader
-      "h" nil
-      :desc "Help" "H" help-map
-      "h" #'evil-window-left
-      "j" #'evil-window-down
-      "k" #'evil-window-up
-      "l" #'evil-window-right)
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      (:prefix ("TAB" . "workspace")
-       "s" nil
-       (:prefix ("s" . "switch")
-        :desc "Switch to 1st workspace" "a" #'+workspace/switch-to-0
-        :desc "Switch to 2nd workspace" "r" #'+workspace/switch-to-1
-        :desc "Switch to 3rd workspace" "s" #'+workspace/switch-to-2
-        :desc "Switch to 4th workspace" "t" #'+workspace/switch-to-3
-        :desc "Switch to 5th workspace" "n" #'+workspace/switch-to-4
-        :desc "Switch to 6th workspace" "e" #'+workspace/switch-to-5
-        :desc "Switch to 7th workspace" "i" #'+workspace/switch-to-6
-        :desc "Switch to 8th workspace" "o" #'+workspace/switch-to-7)
-       :desc "Save to workspace file"     "S"   #'+workspace/save
-       :desc "Switch to last workspace"   "TAB" #'+workspace/other
-       :desc "Display tab bar"            "."   #'+workspace/display
-       :desc "List workspaces"            "o"   #'+workspace/switch-to))
-#+end_src
-
-#+begin_src emacs-lisp
-;; (map! :leader
-;;       (:prefix ("r" . "roam")
-;;        (:prefix ("n" . "node")
-;;         :desc "Find node" "f" #'org-roam-node-find
-;;         :desc "Insert node" "i" #'org-roam-node-insert)
-;;        (:prefix ("l" . "links")
-;;         :desc "Yank link" "y" #'org-store-link
-;;         :desc "Paste link" "p" #'org-insert-link)))
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      :desc "Find node" "f n" #'org-roam-node-find
-      "n l" nil
-      (:prefix ("n" . "notes")
-       (:prefix ("l" . "links")
-        :desc "Yank link"  "y" #'org-store-link
-        :desc "Paste link" "p" #'org-insert-link)))
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :after org
-      :localleader
-      (:prefix ("l" . "links")
-       (:prefix ("r" . "references")
-        :desc "URL"          "u" #'org-insert-link-from-clipboard
-        :desc "ID"           "i" #'org-add-id-link
-        :desc "ID +desc"     "I" #'org-add-id-link-desc
-        :desc "Header"       "h" #'org-add-header-link
-        :desc "Header +desc" "H" #'org-add-header-link-desc)))
-(map! :after org
-      :localleader
-      (:prefix ("H" . "Help")
-       :desc "Org Entities" "e" #'org-entities-help))
-(map! :after org
-      :localleader
-      (:prefix ("SPC" . "mine")
-       (:prefix ("t" . "toggle")
-        :desc "Pretty entities" "p" #'org-toggle-pretty-entities)
-       :desc "LaTeX" "l" #'org-latex-preview))
-       ;;:desc "Clear LaTeX" "L" #'org-clear-latex-preview))
-#+end_src
-
-#+begin_src emacs-lisp
+#+begin_src emacs-lisp :tangle no
 (map! :leader
       :desc "Get files" "c g" (lambda () (interactive) (run-command-in-vterm "grep -R")))
 #+end_src
-
-#+begin_src emacs-lisp
-;; (map! :after undo-fu
-;;       "C-/" nil)
-(map! :after cape
-      :prefix ("C-x c" . "cape")
-      :desc "cape-file" :i "f" #'cape-file
-      :desc "cape-dict" :i "d" #'cape-dict
-      :desc "cape-dabbrev" :i "b" #'cape-dabbrev)
-(map! :after cape
-      :i "C-/" #'cape-dabbrev)
-(map! :after corfu
-      :i "C-g" #'corfu-quit)
-#+end_src
-
-#+begin_src emacs-lisp
-(map! :leader
-      "x" nil
-      :desc "Execute" "x" #'execute-extended-command)
-#+end_src
-
