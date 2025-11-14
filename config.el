@@ -139,7 +139,12 @@
   ;; Disable auto-download of language servers (incompatible with NixOS)
   (setq! lsp-enable-suggest-server-download nil
          lsp-format-buffer-on-save t
-         lsp-signature-doc-lines 5))
+         lsp-signature-doc-lines 5
+         ;; Performance tuning
+         gc-cons-threshold 100000000              ; 100MB (reduces GC pauses)
+         read-process-output-max (* 1024 1024)    ; 1MB (faster LSP communication)
+         lsp-idle-delay 0.500                      ; Delay before updating
+         lsp-log-io nil))                          ; Disable IO logging
 
 (after! org-roam
   (setq! org-roam-directory "~/ewiki"
@@ -176,7 +181,7 @@
             "q q" #'evil-fill-and-move
             "Q"   #'evil-fill-and-move)
       (:map evil-motion-state-map
-            "/" #'+default/search-buffer)
+            "?" #'+default/search-buffer)
       :im "C-z" nil
       :im "C-f" #'evil-snipe-f
       :im "C-S-f" #'evil-snipe-F)
@@ -286,7 +291,11 @@
 (after! projectile
   (setq! projectile-buffers-filter-function #'projectile-buffers-with-file-or-process
          projectile-enable-caching t
-         projectile-files-cache-expire 60))
+         projectile-files-cache-expire 60)
+  ;; Ignore NixOS and build directories
+  (add-to-list 'projectile-globally-ignored-directories ".direnv")
+  (add-to-list 'projectile-globally-ignored-directories "result")
+  (add-to-list 'projectile-globally-ignored-directories "target"))
 
 ;; Auto-refresh cache on file changes within Emacs
 (add-hook! 'after-save-hook
