@@ -192,7 +192,7 @@ to prevent syntax elements from being highlighted in comments."
                           "ignore" "ignore-sort" "unhook"
                           "deflag" "no-before" "no-after"
                           "write" "sync-command"
-                          "wrap" "unwrap"))))
+                          "title" "wrap" "unwrap"))))
      (1 'default)
      (2 font-lock-keyword-face))))
 
@@ -227,7 +227,8 @@ to prevent syntax elements from being highlighted in comments."
                (group (or "include" "implicit-array-keys"
                           "fg-key" "fg-delimiter" "fg-prefix"
                           "fg-chord" "fg" "bg" "bd" "shell" "font"
-                          "wrap-cmd"))
+                          "title" "title-font" "fg-title"
+                          "wrap-cmd" "delimiter"))
                (one-or-more space)
                (group (seq "\""
                            (zero-or-more (or (seq "\\" anything)
@@ -238,7 +239,7 @@ to prevent syntax elements from being highlighted in comments."
 
     ;; Integer macros (including negative)
     (,(rx (seq ":"
-               (group (or "menu-width" "menu-gap"))
+               (group (or "menu-width" "menu-gap" "table-padding"))
                (one-or-more space)
                (group (seq (zero-or-one "-") (one-or-more digit)))))
      (1 font-lock-preprocessor-face)
@@ -653,8 +654,7 @@ REPORT-FN is a callback function to report diagnostics."
               '((?{ . ?})
                 (?\[ . ?\])
                 (?\( . ?\))
-                (?\" . ?\")))
-  (electric-pair-local-mode 1))
+                (?\" . ?\)))))
 
 ;; Associate `.wks' extension with `wks-mode'.
 ;;;###autoload
