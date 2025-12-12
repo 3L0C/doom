@@ -165,7 +165,7 @@
        ;;nim               ; python + lisp at the speed of c
        (nix +lsp
             +tree-sitter)               ; I hereby declare "nix geht mehr!"
-       ;;ocaml             ; an objective camel
+       (ocaml +lsp)             ; an objective camel
        (org +journal
             +pandoc
             ;; +pretty 

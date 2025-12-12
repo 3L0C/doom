@@ -86,6 +86,27 @@
               lua-indent-level 4
               lua-indent-nested-block-content-align nil))
 
+;; (after! opam-switch-mode
+;;   (remove-hook 'tuareg-mode-local-vars-hook #'opam-switch-mode))
+
+;; (after! tuareg
+;;   (setq tuareg-opam-insinuate nil))
+;; (use-package! opam-switch-mode
+;;   :defer t
+;;   :init
+;;   (remove-hook 'tuareg-mode-local-vars-hook #'opam-switch-mode))
+
+;; (after! tuareg
+;;   (remove-hook 'tuareg-mode-local-vars-hook #'opam-switch-mode))
+(add-hook! tuareg
+  (setq-local comment-style 'multi-line)
+  (setq! tuareg-mode-name "🐫"))
+(after! smartparens-ml
+  (sp-with-modes '(tuareg-mode)
+    (sp-local-pair "sig" nil :actions nil)
+    (sp-local-pair "struct" nil :actions nil)
+    (sp-local-pair "(*" nil :actions nil)))
+
 (setq! +doom-dashboard-pwd-policy "~/"
        fancy-splash-image "~/.config/doom/doom-emacs-dash.png")
 
