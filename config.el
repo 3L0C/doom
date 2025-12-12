@@ -80,6 +80,8 @@
 ;;     (setq-local corfu-auto-delay 0.2)
 ;;     (setq-local lua-indent-level 4)
 ;;     (setq-local lua-indent-nested-block-content-align nil)))
+(after! lsp-mode
+  (setq lsp-clients-lua-language-server-bin (executable-find "lua-language-server")))
 
 (add-hook! '(lua-mode-hook lua-ts-mode-hook)
   (setq-local corfu-auto-delay 0.2
@@ -147,6 +149,7 @@
 (map! :after corfu
       :map corfu-map
       "S-SPC" #'corfu-insert-separator
+      "C-l" #'corfu-expand
       "C-g" #'corfu-quit)
 
 (map! :after cape
