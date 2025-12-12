@@ -408,5 +408,105 @@ Uses LSP rename for project-wide refactoring. Prompts for each function."
         (sit-for 0.05)))
     (message "Finished renaming. %d functions renamed in total." count)))
 
+;;;; Transient Frame Functions
+
+(defun +my/create-transient-frame (buffer-or-fn &optional frame-name)
+  "Create a dedicated frame for BUFFER-OR-FN that closes when buffer is killed.
+BUFFER-OR-FN can be a buffer object or a function that creates/returns a buffer.
+FRAME-NAME is an optional name for the frame.
+
+The frame tracks its 'primary buffer' and automatically closes when:
+1. The primary buffer is killed
+2. For vterm buffers: when the shell process exits
+
+The frame allows switching to other buffers but only closes when the
+primary buffer is killed."
+  (let* ((buffer (if (functionp buffer-or-fn)
+                     (funcall buffer-or-fn)
+                   buffer-or-fn))
+         ;; Get display from environment or use current frame's display
+         (target-display (or (getenv "DISPLAY")
+                            (frame-parameter nil 'display)))
+         (frame (if target-display
+                    ;; Create frame on specific display
+                    (make-frame-on-display target-display
+                                          `((name . ,(or frame-name "Transient Frame"))
+                                            (transient-primary-buffer . ,buffer)))
+                  ;; Fallback to regular make-frame if no display info
+                  (make-frame `((name . ,(or frame-name "Transient Frame"))
+                               (transient-primary-buffer . ,buffer))))))
+    (select-frame-set-input-focus frame)
+    (switch-to-buffer buffer)
+
+    ;; Add buffer-local kill hook to close frame
+    (with-current-buffer buffer
+      (add-hook 'kill-buffer-hook
+                (lambda ()
+                  ;; Check if this buffer's frame is still live
+                  (let ((tracked-frame (+my/get-buffer-frame-with-primary buffer)))
+                    (when (and tracked-frame (frame-live-p tracked-frame))
+                      (delete-frame tracked-frame))))
+                nil t)) ;; buffer-local hook
+
+    ;; For vterm buffers, add process sentinel
+    (when (eq (buffer-local-value 'major-mode buffer) 'vterm-mode)
+      (+my/setup-vterm-sentinel buffer))
+
+    frame))
+
+(defun +my/get-buffer-frame-with-primary (buffer)
+  "Find frame that has BUFFER as its primary buffer."
+  (seq-find (lambda (frame)
+              (eq (frame-parameter frame 'transient-primary-buffer) buffer))
+            (frame-list)))
+
+(defun +my/setup-vterm-sentinel (buffer)
+  "Set up process sentinel for vterm BUFFER to auto-close frame."
+  (when-let ((proc (get-buffer-process buffer)))
+    (set-process-sentinel
+     proc
+     (lambda (process _event)
+       (when (not (process-live-p process))
+         (let ((buf (process-buffer process)))
+           (when (buffer-live-p buf)
+             ;; Kill buffer, which triggers the kill-buffer-hook
+             ;; that closes the frame
+             (kill-buffer buf))))))))
+
+(defun +my/vterm-transient-frame ()
+  "Open vterm in a dedicated frame that closes when buffer is killed.
+Frame auto-closes when:
+  - Buffer is explicitly killed (C-x k)
+  - Vterm shell process exits"
+  (interactive)
+  (+my/create-transient-frame
+   (lambda ()
+     (let ((vterm-buffer (generate-new-buffer "*vterm*")))
+       (with-current-buffer vterm-buffer
+         (vterm-mode))
+       vterm-buffer))
+   "VTerm"))
+
+(defun +my/dirvish-transient-frame ()
+  "Open dirvish in a dedicated frame that closes when buffer is killed.
+Frame auto-closes when buffer is explicitly killed."
+  (interactive)
+  (+my/create-transient-frame
+   (lambda ()
+     (let ((default-directory "~/"))
+       ;; Call dirvish and ensure we return the actual dirvish buffer
+       (dirvish default-directory)
+       ;; dirvish may switch buffers, so explicitly get the dired/dirvish buffer
+       (or (and (or (derived-mode-p 'dired-mode)
+                    (derived-mode-p 'dirvish-mode))
+                (current-buffer))
+           (car (seq-filter (lambda (b)
+                             (with-current-buffer b
+                               (or (derived-mode-p 'dirvish-mode)
+                                   (derived-mode-p 'dired-mode))))
+                           (buffer-list)))
+           (current-buffer)))) ;; fallback to current buffer
+   "Dirvish"))
+
 (provide 'funcs)
 ;;; funcs.el ends here
