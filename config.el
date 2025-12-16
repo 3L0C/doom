@@ -382,14 +382,15 @@
       "K" #'helpful-key)
 
 (defun my/disable-cursor-nudging-h ()
-  "Disable centered-cursor-mode and scroll margins in current buffer.
+  "Disable centered-cursor-mode in current buffer with minimal scroll margins.
 This is useful for terminal emulators and shell buffers where
-cursor centering and margins interfere with the natural scrolling behavior."
+cursor centering interferes with the natural scrolling behavior.
+Uses scroll-conservatively 101 to scroll one line at a time."
   (centered-cursor-mode -1)
-  (setq-local scroll-margin 0
-              hscroll-margin 0
-              scroll-conservatively 0
-              maximum-scroll-margin 0.0))
+  (setq-local scroll-margin 2
+              hscroll-margin 2
+              scroll-conservatively 101
+              maximum-scroll-margin 0.1))
 (add-hook! '(vterm-mode-hook
              eshell-mode-hook
              shell-mode-hook
