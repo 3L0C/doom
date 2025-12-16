@@ -85,24 +85,42 @@
                font-lock-keyword-face))))
 
 (ert-deftest wks-mode-test-font-lock-builtin-interpolation ()
-  "Test that builtin interpolations are highlighted as constants."
+  "Test that builtin interpolations have delimiters and content with different faces."
   (wks-test-with-temp-buffer
    "a \"Test %(key)\" %{{echo %(desc)}}"
    (font-lock-ensure)
    (search-forward "%(key)")
-   (let ((face (get-text-property (match-beginning 0) 'face)))
-     (should (or (eq face font-lock-constant-face)
-                 (and (listp face) (memq font-lock-constant-face face)))))))
+   ;; Check %( has builtin face
+   (let ((paren-face (get-text-property (match-beginning 0) 'face)))
+     (should (or (eq paren-face font-lock-builtin-face)
+                 (and (listp paren-face) (memq font-lock-builtin-face paren-face)))))
+   ;; Check 'key' has constant face (position after "%(")
+   (let ((content-face (get-text-property (+ (match-beginning 0) 2) 'face)))
+     (should (or (eq content-face font-lock-constant-face)
+                 (and (listp content-face) (memq font-lock-constant-face content-face)))))
+   ;; Check ) has builtin face
+   (let ((close-face (get-text-property (1- (match-end 0)) 'face)))
+     (should (or (eq close-face font-lock-builtin-face)
+                 (and (listp close-face) (memq font-lock-builtin-face close-face)))))))
 
 (ert-deftest wks-mode-test-font-lock-user-var-interpolation ()
-  "Test that user variable interpolations are highlighted as variables."
+  "Test that user variable interpolations have delimiters and content with different faces."
   (wks-test-with-temp-buffer
    ":var \"myvar\" \"value\"\na \"Test %(myvar)\" %{{cmd}}"
    (font-lock-ensure)
    (search-forward "%(myvar)")
-   (let ((face (get-text-property (match-beginning 0) 'face)))
-     (should (or (eq face font-lock-variable-name-face)
-                 (and (listp face) (memq font-lock-variable-name-face face)))))))
+   ;; Check %( has builtin face
+   (let ((paren-face (get-text-property (match-beginning 0) 'face)))
+     (should (or (eq paren-face font-lock-builtin-face)
+                 (and (listp paren-face) (memq font-lock-builtin-face paren-face)))))
+   ;; Check 'myvar' has variable-name face (position after "%(")
+   (let ((content-face (get-text-property (+ (match-beginning 0) 2) 'face)))
+     (should (or (eq content-face font-lock-variable-name-face)
+                 (and (listp content-face) (memq font-lock-variable-name-face content-face)))))
+   ;; Check ) has builtin face
+   (let ((close-face (get-text-property (1- (match-end 0)) 'face)))
+     (should (or (eq close-face font-lock-builtin-face)
+                 (and (listp close-face) (memq font-lock-builtin-face close-face)))))))
 
 (ert-deftest wks-mode-test-font-lock-var-macro ()
   "Test that :var macro is highlighted correctly."
@@ -131,14 +149,60 @@
    (should (eq (get-text-property (match-beginning 0) 'face)
                font-lock-builtin-face))))
 
+(ert-deftest wks-mode-test-font-lock-command-double-paren ()
+  "Test that %((...)) command delimiter is not treated as interpolation."
+  (wks-test-with-temp-buffer
+   "a \"Test\" %((echo hello))"
+   (font-lock-ensure)
+   ;; The %(( should be builtin face (command delimiter), not interpolation
+   (search-forward "%((")
+   (should (eq (get-text-property (match-beginning 0) 'face)
+               font-lock-builtin-face))
+   ;; The )) should also be builtin face
+   (search-forward "))")
+   (should (eq (get-text-property (match-beginning 0) 'face)
+               font-lock-builtin-face))))
+
+(ert-deftest wks-mode-test-font-lock-command-hash-inside ()
+  "Test that # inside command is not treated as comment."
+  (wks-test-with-temp-buffer
+   "a \"Test\" %{{echo # text}}"
+   (font-lock-ensure)
+   ;; Force syntax-propertize to run
+   (syntax-propertize (point-max))
+   (font-lock-ensure)
+   ;; The # inside the command should NOT have comment face
+   (search-forward "#")
+   (should-not (eq (get-text-property (match-beginning 0) 'face)
+                   font-lock-comment-face))))
+
+(ert-deftest wks-mode-test-font-lock-command-hash-delimiter ()
+  "Test that %##cmd## delimiter works correctly."
+  (wks-test-with-temp-buffer
+   "a \"Test\" %##echo hello##"
+   (font-lock-ensure)
+   (syntax-propertize (point-max))
+   (font-lock-ensure)
+   ;; The %## should be builtin face
+   (search-forward "%##")
+   (should (eq (get-text-property (match-beginning 0) 'face)
+               font-lock-builtin-face))
+   ;; The ## at end should also be builtin face
+   (search-forward "##")
+   (should (eq (get-text-property (match-beginning 0) 'face)
+               font-lock-builtin-face))))
+
 (ert-deftest wks-mode-test-font-lock-chord-array ()
-  "Test that chord arrays are highlighted."
+  "Test that chord arrays have brackets and keys with different faces."
   (wks-test-with-temp-buffer
    "[abc] \"Test %(index)\" %{{cmd}}"
    (font-lock-ensure)
-   (search-forward "[abc]")
-   (should (eq (get-text-property (match-beginning 0) 'face)
-               font-lock-keyword-face))))
+   ;; Opening bracket should be builtin face (position 1)
+   (should (eq (get-text-property 1 'face) font-lock-builtin-face))
+   ;; Keys should be constant face (positions 2, 3, 4)
+   (should (eq (get-text-property 2 'face) font-lock-constant-face))
+   ;; Closing bracket should be builtin face (position 5)
+   (should (eq (get-text-property 5 'face) font-lock-builtin-face))))
 
 (ert-deftest wks-mode-test-font-lock-special-key ()
   "Test that special keys are highlighted."
@@ -148,6 +212,132 @@
    (search-forward "TAB")
    (should (eq (get-text-property (match-beginning 0) 'face)
                font-lock-constant-face))))
+
+(ert-deftest wks-mode-test-font-lock-special-key-bs ()
+  "Test that BS (Backspace) special key is highlighted."
+  (wks-test-with-temp-buffer
+   "BS \"Backspace\" %{{cmd}}"
+   (font-lock-ensure)
+   (search-forward "BS")
+   (should (eq (get-text-property (match-beginning 0) 'face)
+               font-lock-constant-face))))
+
+(ert-deftest wks-mode-test-font-lock-color-aliases ()
+  "Test that color alias macros are highlighted."
+  (wks-test-with-temp-buffer
+   ":fg-color \"#ffffff\"\n:bg-color \"#000000\"\n:bd-color \"#333333\""
+   (font-lock-ensure)
+   (search-forward "fg-color")
+   (should (eq (get-text-property (match-beginning 0) 'face)
+               font-lock-preprocessor-face))
+   (search-forward "bg-color")
+   (should (eq (get-text-property (match-beginning 0) 'face)
+               font-lock-preprocessor-face))
+   (search-forward "bd-color")
+   (should (eq (get-text-property (match-beginning 0) 'face)
+               font-lock-preprocessor-face))))
+
+(ert-deftest wks-mode-test-font-lock-keep-delay ()
+  "Test that :keep-delay macro is highlighted."
+  (wks-test-with-temp-buffer
+   ":keep-delay 100"
+   (font-lock-ensure)
+   (search-forward "keep-delay")
+   (should (eq (get-text-property (match-beginning 0) 'face)
+               font-lock-preprocessor-face))))
+
+(ert-deftest wks-mode-test-font-lock-unsorted ()
+  "Test that :unsorted switch macro is highlighted."
+  (wks-test-with-temp-buffer
+   ":unsorted\na \"Test\" %{{cmd}}"
+   (font-lock-ensure)
+   (search-forward "unsorted")
+   (should (eq (get-text-property (match-beginning 0) 'face)
+               font-lock-preprocessor-face))))
+
+(ert-deftest wks-mode-test-font-lock-goto ()
+  "Test that @goto meta command is highlighted (only 'goto', not '@')."
+  (wks-test-with-temp-buffer
+   "g \"Goto\" @goto \"w m\""
+   (font-lock-ensure)
+   (search-forward "@goto")
+   ;; After search, point is at position 15 (after @goto)
+   ;; '@' is at position 10, 'g' in 'goto' is at position 11
+   ;; Check that 'goto' is highlighted as keyword
+   (let ((goto-face (get-text-property (- (point) 4) 'face)))  ; 'g' at pos 11
+     (should (or (eq goto-face font-lock-keyword-face)
+                 (and (listp goto-face) (memq font-lock-keyword-face goto-face)))))
+   ;; Check that '@' is NOT highlighted as keyword
+   (let ((at-face (get-text-property (- (point) 5) 'face)))  ; '@' at pos 10
+     (should-not (eq at-face font-lock-keyword-face)))))
+
+(ert-deftest wks-mode-test-font-lock-modifier-implicit-array ()
+  "Test that modifier+implicit array (C-..., M-...) is highlighted."
+  (wks-test-with-temp-buffer
+   "C-... \"Ctrl+%(index+1)\" %{{cmd}}"
+   (font-lock-ensure)
+   (search-forward "C-...")
+   (should (eq (get-text-property (match-beginning 0) 'face)
+               font-lock-keyword-face))))
+
+(ert-deftest wks-mode-test-font-lock-chord-expression ()
+  "Test that chord expressions inside arrays are highlighted."
+  (wks-test-with-temp-buffer
+   "[\n    (b \"Brave\" +keep %{{brave}})\n    x\n]"
+   (font-lock-ensure)
+   (search-forward "(b")
+   (should (eq (get-text-property (1+ (match-beginning 0)) 'face)
+               font-lock-constant-face))))
+
+(ert-deftest wks-mode-test-font-lock-bare-key-in-array ()
+  "Test that bare keys inside multi-line arrays are highlighted."
+  (wks-test-with-temp-buffer
+   "[\n    (1 \"Terminal 1\" %{{kitty}})\n    3\n    4\n] \"desc\" %{{cmd}}"
+   (font-lock-ensure)
+   ;; Find the bare key '3'
+   (search-forward "3")
+   (should (eq (get-text-property (1- (point)) 'face)
+               font-lock-constant-face))
+   ;; Find the bare key '4'
+   (search-forward "4")
+   (should (eq (get-text-property (1- (point)) 'face)
+               font-lock-constant-face))))
+
+(ert-deftest wks-mode-test-font-lock-modifier-unified ()
+  "Test that C-a has unified highlighting (both C- and a as constant)."
+  (wks-test-with-temp-buffer
+   "C-a \"Ctrl+A\" %{{cmd}}"
+   (font-lock-ensure)
+   ;; Both C- and a should be constant face as one unit
+   (should (eq (get-text-property 1 'face) font-lock-constant-face))  ; C
+   (should (eq (get-text-property 2 'face) font-lock-constant-face))  ; -
+   (should (eq (get-text-property 3 'face) font-lock-constant-face)))) ; a
+
+(ert-deftest wks-mode-test-font-lock-escaped-trigger-key ()
+  "Test that escaped chars as trigger keys are highlighted as constants only."
+  (wks-test-with-temp-buffer
+   "\\# \"Hash\" %{{cmd}}"
+   (font-lock-ensure)
+   ;; The escaped character \# should have ONLY constant face (no warning face)
+   (should (eq (get-text-property 1 'face) font-lock-constant-face))
+   (should (eq (get-text-property 2 'face) font-lock-constant-face))))
+
+(ert-deftest wks-mode-test-font-lock-escaped-bracket-key ()
+  "Test that escaped bracket as trigger key is highlighted as constant only."
+  (wks-test-with-temp-buffer
+   "\\[ \"Bracket\" %{{cmd}}"
+   (font-lock-ensure)
+   (should (eq (get-text-property 1 'face) font-lock-constant-face))))
+
+(ert-deftest wks-mode-test-ignore-sort-not-highlighted ()
+  "Test that +ignore-sort is NOT highlighted as a valid flag."
+  (wks-test-with-temp-buffer
+   "a \"Test\" +ignore-sort %{{cmd}}"
+   (font-lock-ensure)
+   (search-forward "ignore-sort")
+   ;; Should not be highlighted as keyword-face since it's removed from spec
+   (should-not (eq (get-text-property (match-beginning 0) 'face)
+                   font-lock-keyword-face))))
 
 ;;; Interactive Command Tests
 
@@ -208,6 +398,39 @@
           (candidates (nth 2 result)))
      (should (member "key" candidates))
      (should (member "index" candidates)))))
+
+(ert-deftest wks-mode-test-completion-after-at ()
+  "Test completion after @ suggests meta commands."
+  (with-temp-buffer
+    (wks-mode)
+    (insert "a @goto")  ; Add prefix so there's content before @
+    (goto-char 5)  ; Position after @g (at position 5: "a @g|oto")
+    (let* ((result (wks-completion-at-point))
+           (candidates (nth 2 result)))
+      (should (member "goto" candidates)))))
+
+(ert-deftest wks-mode-test-completion-new-macros ()
+  "Test that new macros appear in completion."
+  (wks-test-with-temp-buffer
+   ":u"
+   (goto-char (point-max))
+   (let* ((result (wks-completion-at-point))
+          (candidates (nth 2 result)))
+     (should (member "unsorted" candidates))
+     (should (member "fg-color" candidates))
+     (should (member "keep-delay" candidates)))))
+
+(ert-deftest wks-mode-test-completion-flags-updated ()
+  "Test that flag completion has title, wrap, unwrap but not ignore-sort."
+  (wks-test-with-temp-buffer
+   "+t"
+   (goto-char (point-max))
+   (let* ((result (wks-completion-at-point))
+          (candidates (nth 2 result)))
+     (should (member "title" candidates))
+     (should (member "wrap" candidates))
+     (should (member "unwrap" candidates))
+     (should-not (member "ignore-sort" candidates)))))
 
 ;;; Imenu Tests
 

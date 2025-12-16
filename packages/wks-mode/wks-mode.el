@@ -110,6 +110,52 @@
     st)
   "Syntax table for `wks-mode'.")
 
+;;; Syntax Propertize Function
+
+(defconst wks--command-delimiters-re
+  (rx "%"
+      (or (seq "{{" (*? anything) "}}")
+          (seq "((" (*? anything) "))")
+          (seq "[[" (*? anything) "]]")
+          ;; Arbitrary single-char delimiters: %||...||, %##...##, etc.
+          (seq (group (any "!" "#" "$" "&" "'" "*" "+" "," "-" "."
+                           "/" ":" ";" "<" "=" ">" "?" "@" "\\" "^"
+                           "_" "`" "|" "~"))
+               (backref 1)
+               (*? anything)
+               (backref 1)
+               (backref 1))))
+  "Regexp matching wks command delimiters.")
+
+;;; Rx Pattern Constants (for reducing duplication in font-lock)
+
+(defconst wks--rx-string-content
+  '(zero-or-more (or (seq "\\" anything)
+                     (not (any "\""))))
+  "Rx pattern for string content with escape handling.
+Matches any sequence of characters inside double quotes, properly
+handling escaped characters like \\\" and \\\\.")
+
+(defconst wks--rx-escapable-chars
+  '(any "\\" "[" "]" "{" "}" "#" "\"" ":" "^" "+" "(" ")")
+  "Rx pattern for characters that can be escaped in wks syntax.
+These characters have special meaning and may need backslash escaping.")
+
+(defun wks-syntax-propertize (start end)
+  "Apply syntax properties to region from START to END.
+This neutralizes comment syntax for # characters inside command delimiters,
+allowing commands like %{{echo # text}} or %##cmd## to work correctly."
+  (goto-char start)
+  (while (re-search-forward wks--command-delimiters-re end t)
+    (let ((cmd-start (match-beginning 0))
+          (cmd-end (match-end 0)))
+      ;; Set all # characters in this command region to punctuation syntax
+      (save-excursion
+        (goto-char cmd-start)
+        (while (search-forward "#" cmd-end t)
+          (put-text-property (1- (point)) (point)
+                             'syntax-table (string-to-syntax ".")))))))
+
 ;;; Syntactic Face Function
 
 (defun wks-syntactic-face-function (state)
@@ -140,31 +186,23 @@ to prevent syntax elements from being highlighted in comments."
 
 ;;; Font Lock - Helper Functions
 
+(defun wks--make-command-pattern (open close)
+  "Generate font-lock pattern for command with OPEN and CLOSE delimiters."
+  `(,(rx-to-string `(seq (group ,open)
+                         (group (*? (not (any "\n"))))
+                         (group ,close)))
+    (1 font-lock-builtin-face keep)
+    (2 'default keep)
+    (3 font-lock-builtin-face keep)))
+
 (defun wks--font-lock-commands ()
   "Font-lock patterns for wks commands."
   `(
-    ;; Commands - with `%{{' and `}}' delimiters.
-    (,(rx (seq (group "%{{")
-               (group (*? (not (any "\n"))))
-               (group "}}")))
-     (1 font-lock-builtin-face keep)
-     (2 'default keep)
-     (3 font-lock-builtin-face keep))
-    ;; Commands - with `%((' and `))' delimiters.
-    (,(rx (seq (group "%((")
-               (group (*? (not (any "\n"))))
-               (group "))")))
-     (1 font-lock-builtin-face keep)
-     (2 'default keep)
-     (3 font-lock-builtin-face keep))
-    ;; Commands - with `%[[' and `]]' delimiters.
-    (,(rx (seq (group "%[[")
-               (group (*? (not (any "\n"))))
-               (group "]]")))
-     (1 font-lock-builtin-face keep)
-     (2 'default keep)
-     (3 font-lock-builtin-face keep))
-    ;; Commands - with single-char arbitrary delimiter (e.g., %||...||, %##...##)
+    ;; Commands with standard delimiters: %{{...}}, %((...)), %[[...]]
+    ,(wks--make-command-pattern "%{{" "}}")
+    ,(wks--make-command-pattern "%((" "))")
+    ,(wks--make-command-pattern "%[[" "]]")
+    ;; Commands with single-char arbitrary delimiter (e.g., %||...||, %##...##)
     ;; Note: Simplified to avoid catastrophic backtracking
     (,(rx (seq (group "%")
                (group (seq (group (any "!" "#" "$" "&" "'" "*" "+" "," "-" "."
@@ -186,13 +224,13 @@ to prevent syntax elements from being highlighted in comments."
                (group (or "before" "after" "sync-before" "sync-after"))))
      (1 'default)
      (2 font-lock-keyword-face))
-    ;; Flags
+    ;; Flags - ensure flag name is not followed by hyphen/alnum (to avoid matching +ignore in +ignore-sort)
     (,(rx (seq (group "+")
                (group (or "keep" "close" "inherit" "execute"
-                          "ignore" "ignore-sort" "unhook"
-                          "deflag" "no-before" "no-after"
-                          "write" "sync-command"
-                          "title" "wrap" "unwrap"))))
+                          "ignore" "unhook" "deflag"
+                          "no-before" "no-after" "write"
+                          "sync-command" "title" "wrap" "unwrap"))
+               (or (not (any "-" alnum)) eol)))
      (1 'default)
      (2 font-lock-keyword-face))))
 
@@ -201,39 +239,30 @@ to prevent syntax elements from being highlighted in comments."
   `(
     ;; Preprocessor switch macros (no arguments)
     (,(rx (seq ":"
-               (group (or "debug" "sort" "top" "bottom"))
+               (group (or "debug" "sort" "unsorted" "top" "bottom"))
                (or space eol)))
      (1 font-lock-preprocessor-face))
 
     ;; Special handling for :var - highlight variable name distinctly
-    (,(rx (seq ":"
-               (group "var")
-               (one-or-more space)
-               (group (seq "\""
-                           (zero-or-more (or (seq "\\" anything)
-                                             (not (any "\""))))
-                           "\""))
-               (one-or-more space)
-               (group (seq "\""
-                           (zero-or-more (or (seq "\\" anything)
-                                             (not (any "\""))))
-                           "\""))))
+    (,(rx-to-string `(seq ":"
+                          (group "var")
+                          (one-or-more space)
+                          (group (seq "\"" ,wks--rx-string-content "\""))
+                          (one-or-more space)
+                          (group (seq "\"" ,wks--rx-string-content "\""))))
      (1 font-lock-preprocessor-face)
      (2 font-lock-variable-name-face t)
      (3 font-lock-string-face t))
 
     ;; Other string macros
-    (,(rx (seq ":"
-               (group (or "include" "implicit-array-keys"
-                          "fg-key" "fg-delimiter" "fg-prefix"
-                          "fg-chord" "fg" "bg" "bd" "shell" "font"
-                          "title" "title-font" "fg-title"
-                          "wrap-cmd" "delimiter"))
-               (one-or-more space)
-               (group (seq "\""
-                           (zero-or-more (or (seq "\\" anything)
-                                             (not (any "\""))))
-                           "\""))))
+    (,(rx-to-string `(seq ":"
+                          (group (or "include" "implicit-array-keys"
+                                     "fg-key" "fg-delimiter" "fg-prefix"
+                                     "fg-chord" "fg" "fg-color" "bg" "bg-color" "bd" "bd-color"
+                                     "shell" "font" "title" "title-font" "fg-title"
+                                     "wrap-cmd" "delimiter"))
+                          (one-or-more space)
+                          (group (seq "\"" ,wks--rx-string-content "\""))))
      (1 font-lock-preprocessor-face)
      (2 font-lock-string-face))
 
@@ -248,7 +277,7 @@ to prevent syntax elements from being highlighted in comments."
     ;; Positive integer macros
     (,(rx (seq ":"
                (group (or "max-columns" "border-width" "width-padding"
-                          "height-padding" "delay"))
+                          "height-padding" "delay" "keep-delay"))
                (one-or-more space)
                (group (one-or-more digit))))
      (1 font-lock-preprocessor-face)
@@ -263,97 +292,151 @@ to prevent syntax elements from being highlighted in comments."
      (1 font-lock-preprocessor-face)
      (2 font-lock-constant-face))))
 
+(defun wks--font-lock-meta-commands ()
+  "Font-lock patterns for wks meta commands (@ prefixed)."
+  `(
+    ;; @goto meta command - highlight only 'goto' as keyword (not @)
+    (,(rx-to-string `(seq "@"
+                          (group "goto")
+                          (one-or-more space)
+                          (group (seq "\"" ,wks--rx-string-content "\""))))
+     (1 font-lock-keyword-face)
+     (2 font-lock-string-face t))))
+
 (defun wks--font-lock-interpolations ()
   "Font-lock patterns for wks interpolations.
 NOTE: Order matters! Builtin interpolations MUST come before user-defined
 variables."
   `(
-    ;; Builtin interpolations - these MUST be first, use prepend to take priority
+    ;; Builtin interpolations - split into delimiter and content groups
     ;; Use matcher function to skip comments while highlighting in strings
     ((lambda (limit)
        (wks--match-unless-comment
-        (rx (group (seq "%("
-                        (or "key"
-                            "index+1" "index"
-                            "desc^^" "desc^"
-                            "desc,," "desc,"
-                            "desc" "wrap_cmd")
-                        ")")))
+        (rx (group "%(")
+            (group (or "key"
+                       "index+1" "index"
+                       "desc^^" "desc^"
+                       "desc,," "desc,"
+                       "desc" "wrap_cmd"))
+            (group ")"))
         limit))
-     (1 font-lock-constant-face prepend))
+     (1 font-lock-builtin-face prepend)    ; %(
+     (2 font-lock-constant-face prepend)   ; content
+     (3 font-lock-builtin-face prepend))   ; )
 
     ;; User-defined variable interpolations - catch-all for %(anything-not-builtin)
     ;; Constrained to not cross newlines to prevent runaway highlighting
+    ;; Skip %(( which is the %((...)) command delimiter, not an interpolation
     ;; Use matcher function to skip comments while highlighting in strings
     ((lambda (limit)
-       (wks--match-unless-comment
-        (rx (group (seq "%(" (one-or-more (not (any ")" "\n"))) ")")))
-        limit))
-     (1 font-lock-variable-name-face prepend))))
+       (let ((found nil))
+         (while (and (not found)
+                     (wks--match-unless-comment
+                      (rx (group "%(")
+                          (group (one-or-more (not (any ")" "\n"))))
+                          (group ")"))
+                      limit))
+           ;; Skip if this is %(( - that's a command delimiter
+           (unless (eq (char-after (match-end 1)) ?\()
+             (setq found t)))
+         found))
+     (1 font-lock-builtin-face prepend)         ; %(
+     (2 font-lock-variable-name-face prepend)   ; content
+     (3 font-lock-builtin-face prepend))))
 
 (defun wks--font-lock-special-keys ()
   "Font-lock patterns for special keys and chord arrays."
   `(
-    ;; Chord array trigger - three dots
+    ;; Chord array trigger - three dots with optional modifiers
     (,(rx (seq line-start
                (zero-or-more space)
-               (group "...")
+               (group (zero-or-more (or "C-" "M-" "H-" "S-"))
+                      "...")
                (one-or-more space)))
      (1 font-lock-keyword-face))
 
-    ;; Chord array trigger - [keys]
+    ;; Explicit chord array - [keys] with separate highlighting for brackets and keys
     (,(rx (seq line-start
                (zero-or-more space)
-               (group "[" (one-or-more (not (any "]" "\n"))) "]")
+               (group "[")
+               (group (one-or-more (not (any "]" "\n"))))
+               (group "]")
                (one-or-more space)))
-     (1 font-lock-keyword-face))
+     (1 font-lock-builtin-face)       ; Opening bracket
+     (2 font-lock-constant-face)      ; Keys (trigger key face)
+     (3 font-lock-builtin-face))      ; Closing bracket
 
-    ;; Single-character trigger keys (any non-whitespace UTF-8 character)
-    ;; This includes ASCII letters, digits, punctuation, and UTF-8 codepoints
-    ;; Must come before special keys pattern to avoid conflicts
+    ;; Chord expressions inside arrays - (key "desc" ...)
+    ;; Match opening paren at line start (after whitespace) inside arrays
     (,(rx (seq line-start
                (zero-or-more space)
-               ;; Optional modifiers (highlighted separately by modifier pattern)
-               (zero-or-more (or "C-" "M-" "H-" "S-"))
-               ;; Capture any single non-whitespace character
-               (group (not (any space "\t" "\n")))
+               "("
+               (group (one-or-more (not (any space "\t" "\n"))))  ; key
+               (one-or-more space)
+               "\""))
+     (1 font-lock-constant-face))
+
+    ;; Bare keys inside multi-line arrays - single char on its own line (indented)
+    (,(rx (seq line-start
+               (one-or-more space)  ; Must be indented (inside array)
+               (group (not (any space "\t" "\n" "[" "]" "(" ")" "{" "}")))
+               (or space eol)))     ; Followed by space or end of line
+     (1 font-lock-constant-face))
+
+    ;; Escaped characters as trigger keys
+    ;; When at line start position (followed by description string)
+    (,(rx-to-string `(seq line-start
+                          (zero-or-more space)
+                          (group (seq "\\" ,wks--rx-escapable-chars))
+                          (one-or-more space)
+                          "\""))
+     (1 font-lock-constant-face))
+
+    ;; Single-character trigger keys with optional modifiers (unified highlighting)
+    ;; Captures modifiers + key as one unit with constant face
+    (,(rx (seq line-start
+               (zero-or-more space)
+               ;; Capture modifiers + key as one unit
+               (group (zero-or-more (or "C-" "M-" "H-" "S-"))
+                      (not (any space "\t" "\n")))
                (one-or-more space)
                "\""))
      (1 font-lock-constant-face))
 
     ;; Special keys (TAB, SPC, F1-F35, arrow keys, etc.)
     (,(rx (seq word-boundary
-               (or "TAB" "SPC" "RET" "DEL" "ESC" "Home" "End" "Begin"
+               (or "TAB" "SPC" "RET" "BS" "DEL" "ESC" "Home" "End" "Begin"
                    "PgUp" "PgDown" "Left" "Right" "Up" "Down"
                    "VolDown" "VolMute" "VolUp" "Play" "Stop" "Prev" "Next"
                    (seq "F" (one-or-more digit)))
                word-boundary))
-     (0 font-lock-constant-face))
-
-    ;; Key modifiers
-    (,(rx (or "C-" "M-" "H-" "S-"))
-     (0 font-lock-keyword-face))))
+     (0 font-lock-constant-face))))
 
 (defun wks--font-lock-strings ()
   "Font-lock patterns for strings."
   `(
     ;; Strings (descriptions and other quoted text)
     ;; Use keep to not override interpolations already highlighted
-    (,(rx (seq "\""
-               (zero-or-more (or (seq "\\" anything)
-                                 (not (any "\""))))
-               "\""))
+    (,(rx-to-string `(seq "\"" ,wks--rx-string-content "\""))
      (0 font-lock-string-face keep))))
 
 (defun wks--font-lock-misc ()
   "Font-lock patterns for miscellaneous syntax."
   `(
-    ;; Escaped special characters
+    ;; Escaped special characters (but NOT at line start - those are trigger keys)
     ;; Use matcher function to skip comments while highlighting in strings
     ((lambda (limit)
-       (wks--match-unless-comment
-        (rx (seq "\\" (or "\\" "[" "]" "{" "}" "#" "\"" ":" "^" "+" "(" ")")))
-        limit))
+       (let ((found nil)
+             (pattern ,(rx-to-string `(seq "\\" ,wks--rx-escapable-chars))))
+         (while (and (not found)
+                     (wks--match-unless-comment pattern limit))
+           ;; Skip if at line start (after optional whitespace) - those are trigger keys
+           (unless (save-excursion
+                     (goto-char (match-beginning 0))
+                     (skip-chars-backward " \t")
+                     (bolp))
+             (setq found t)))
+         found))
      (0 font-lock-warning-face prepend))
 
     ;; Delimiters
@@ -372,6 +455,7 @@ variables."
    (wks--font-lock-commands)
    (wks--font-lock-keywords)
    (wks--font-lock-macros)
+   (wks--font-lock-meta-commands)
    (wks--font-lock-interpolations)
    (wks--font-lock-strings)
    wks-font-lock-keywords-1)
@@ -522,17 +606,19 @@ This function is adapted from `zig-mode'."
                 (or (eq (char-before) ?:)
                     (eq (char-after) ?:)))
               '("include" "var" "fg-key" "fg-delimiter" "fg-prefix" "fg-chord"
-                "fg" "bg" "bd" "shell" "font" "debug" "sort" "top" "bottom"
+                "fg" "fg-color" "bg" "bg-color" "bd" "bd-color"
+                "shell" "font" "debug" "sort" "unsorted" "top" "bottom"
                 "menu-width" "menu-gap" "max-columns" "border-width"
-                "width-padding" "height-padding" "delay" "border-radius"
-                "implicit-array-keys"))
+                "width-padding" "height-padding" "delay" "keep-delay"
+                "border-radius" "table-padding" "implicit-array-keys"))
              ;; After +
              ((save-excursion
                 (goto-char (car bounds))
                 (or (eq (char-before) ?+)
                     (eq (char-after) ?+)))
-              '("keep" "close" "inherit" "execute" "ignore" "ignore-sort"
-                "unhook" "deflag" "no-before" "no-after" "write" "sync-command"))
+              '("keep" "close" "inherit" "execute" "ignore"
+                "unhook" "deflag" "no-before" "no-after" "write"
+                "sync-command" "title" "wrap" "unwrap"))
              ;; After ^
              ((save-excursion
                 (goto-char (car bounds))
@@ -545,7 +631,13 @@ This function is adapted from `zig-mode'."
                 (and (>= (point) 2)
                      (equal (buffer-substring (- (point) 2) (point)) "%(")))
               '("key" "index" "index+1" "desc" "desc^" "desc^^"
-                "desc," "desc,,"))
+                "desc," "desc,," "wrap_cmd"))
+             ;; After @
+             ((save-excursion
+                (goto-char (car bounds))
+                (or (eq (char-before) ?@)
+                    (eq (char-after) ?@)))
+              '("goto"))
              (t nil))
             :exclusive 'no))))
 
@@ -624,6 +716,9 @@ REPORT-FN is a callback function to report diagnostics."
                  wks-font-lock-keywords-3)
                 nil nil nil nil
                 (font-lock-syntactic-face-function . wks-syntactic-face-function)))
+
+  ;; Syntax propertize - neutralize # inside command delimiters
+  (setq-local syntax-propertize-function #'wks-syntax-propertize)
 
   ;; Indentation
   (setq-local indent-line-function #'wks-mode-indent-line)
