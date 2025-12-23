@@ -100,9 +100,11 @@
 
 ;; (after! tuareg
 ;;   (remove-hook 'tuareg-mode-local-vars-hook #'opam-switch-mode))
-(add-hook! tuareg
+(add-hook! 'tuareg-mode-hook
   (setq-local comment-style 'multi-line)
-  (setq! tuareg-mode-name "🐫"))
+  (setq-local comment-continue "   ")
+  (setq tuareg-electric-indent t)
+  (setq tuareg-mode-name "🐫"))
 (after! smartparens-ml
   (sp-with-modes '(tuareg-mode)
     (sp-local-pair "sig" nil :actions nil)
@@ -214,11 +216,11 @@
   :append #'indent-bars-mode)
 
 (setq! doom-theme 'doom-kanagawa-abyss
-       doom-font (font-spec :font "Monospace" :size 15.0)
-       doom-big-font (font-spec :font "Monospace" :size 36)
-       doom-variable-pitch-font (font-spec :font "Sans" :size 15.0)
-       doom-symbol-font (font-spec :font "Monospace" :size 15.0)
-       doom-serif-font (font-spec :font "Serif" :size 15.0)
+       doom-font (font-spec :font "Monospace" :size 16.0)
+       doom-big-font (font-spec :font "Monospace" :size 36.0)
+       doom-variable-pitch-font (font-spec :font "Sans" :size 16.0)
+       doom-symbol-font (font-spec :font "Monospace" :size 16.0)
+       doom-serif-font (font-spec :font "Serif" :size 16.0)
        doom-themes-enable-bold t
        doom-themes-enable-italic t
        doom-kanagawa-abyss-brighter-comments t
