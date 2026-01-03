@@ -59,6 +59,12 @@
 ;;   (add-hook! (prog-mode text-mode conf-mode)
 ;;              :append #'centered-cursor-mode))
 
+(after! wks-mode
+  (sp-local-pair 'wks-mode "<" ">"))
+
+(after! avy
+  (setq! avy-keys '(?a ?r ?s ?t ?n ?e ?i ?o ?g ?m)))
+
 (global-auto-revert-mode 1)
 (setq! global-auto-revert-non-file-buffers t)
 
@@ -69,17 +75,10 @@
            (setq! c-ts-mode-indent-offset 4
                   c-ts-mode-indent-style 'bsd))
 
-;; (after! (:or nix-mode nix-ts-mode)
-;;   (add-hook! '(nix-mode-hook nix-ts-mode-hook)
-;;              (setq-local tab-width 2)))
 (add-hook! '(nix-mode-hook nix-ts-mode-hook)
+  (setq-local indent-bars-spacing 2)
   (setq-local tab-width 2))
 
-;; (after! (:or lua-mode lua-ts-mode)
-;;   (add-hook! '(lua-mode-hook lua-ts-mode-hook)
-;;     (setq-local corfu-auto-delay 0.2)
-;;     (setq-local lua-indent-level 4)
-;;     (setq-local lua-indent-nested-block-content-align nil)))
 (after! lsp-mode
   (setq lsp-clients-lua-language-server-bin (executable-find "lua-language-server")))
 
@@ -88,19 +87,35 @@
               lua-indent-level 4
               lua-indent-nested-block-content-align nil))
 
-;; (after! opam-switch-mode
-;;   (remove-hook 'tuareg-mode-local-vars-hook #'opam-switch-mode))
-
+;; (defun +ocaml/comment-indent-new-multi-line (&optional _)
+;;   "Break line at point and indent, continuing comment if within one."
+;;   (interactive)
+;;   (comment-indent-new-line)
+;;   (when (eq (char-before) ?*)
+;;     (just-one-space))
+;;   (unless (eq (char-after) 32)
+;;     (save-excursion (insert " ")))
+;;   (beginning-of-line)
+;;   (skip-chars-forward " \t")
+;;   (when (looking-at "\\*+ *")
+;;     (replace-match (or comment-continue "")))
+;;   (when (eq (char-after) ?*)
+;;     (save-excursion (insert " "))))
 ;; (after! tuareg
-;;   (setq tuareg-opam-insinuate nil))
-;; (use-package! opam-switch-mode
-;;   :defer t
-;;   :init
-;;   (remove-hook 'tuareg-mode-local-vars-hook #'opam-switch-mode))
-
-;; (after! tuareg
-;;   (remove-hook 'tuareg-mode-local-vars-hook #'opam-switch-mode))
+;;   (setq-hook! 'tuareg-mode-hook
+;;     comment-line-break-function #'+ocaml/comment-indent-new-line))
+(defadvice! my/ocaml-comment-indent-new-multi-line (&rest _)
+  :after #'+ocaml/comment-indent-new-line
+  (beginning-of-line)
+  (skip-chars-forward " \t")
+  (when (looking-at "\\*+ *")
+    (replace-match (or comment-continue "")))
+  (when (eq (char-after) ?*)
+    (save-excursion (insert " "))))
 (add-hook! 'tuareg-mode-hook
+  (add-hook 'completion-at-point-functions #'cape-keyword 15 t)
+  (smartparens-mode -1)
+  (electric-pair-local-mode 1)
   (setq-local comment-style 'multi-line)
   (setq-local comment-continue "   ")
   (setq tuareg-electric-indent t)
@@ -110,7 +125,6 @@
     (sp-local-pair "sig" nil :actions nil)
     (sp-local-pair "struct" nil :actions nil)
     (sp-local-pair "(*" nil :actions nil)))
-
 (setq! +doom-dashboard-pwd-policy "~/"
        fancy-splash-image "~/.config/doom/doom-emacs-dash.png")
 
@@ -184,11 +198,10 @@
   (auto-fill-mode 1)
   (setq-local fill-column 60)
   (spell-fu-mode -1))
-(add-hook! '(org-mode-hook org-roam-mode-hook gfm-mode-hook)
+(add-hook! '(org-mode-hook org-roam-mode-hook gfm-mode-hook markdown-mode-hook)
            #'my/org-writing-mode-setup)
 
 (evil-global-set-key 'insert (kbd "M-v") 'evil-paste-before)
-(evil-global-set-key 'insert (kbd "C-e") 'evil-scroll-line-to-center)
 (global-set-key (kbd "C-z") nil)
 (setq! evil-vsplit-window-right t
        evil-split-window-below t)
@@ -256,6 +269,7 @@
        doom-localleader-alt-key "M-SPC")
 
 (map! :leader
+      :desc "Select all" "g a" #'mark-whole-buffer
       (:prefix ("b" . "buffer")
        :desc "Clone buffer other window" "c" #'clone-indirect-buffer-other-window
        :desc "List bookmarks" "L" #'list-bookmarks
@@ -273,8 +287,15 @@
         (kbd "g h") 'ibuffer-do-kill-lines
         (kbd "g H") 'ibuffer-update)
 
-(after! dired
-  (setq dired-listing-switches "-ahvl --group-directories-first"))
+(after! dirvish
+  (setq dired-listing-switches "-l --almost-all --human-readable --sort=version --group-directories-first"))
+(use-package! dired-open
+  :after dired
+  :config
+  (setq dired-open-extensions
+        '(("mkv" . "mpv")
+          ("webm" . "mpv")
+          ("pdf" . "sioyek --new-window"))))
 (add-hook! 'dired-mode-hook (dired-hide-details-mode))
 (map! :leader
       (:prefix ("d" . "dired")
