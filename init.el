@@ -104,7 +104,7 @@
        lookup              ; navigate your code and its documentation
        ;;llm               ; when I said you needed friends, I didn't mean...
        (lsp +peek)               ; M-x vscode
-       magit             ; a git porcelain for Emacs
+       (magit +forge)             ; a git porcelain for Emacs
        make              ; run make tasks from Emacs
        ;;pass              ; password manager for nerds
        ;;pdf               ; pdf enhancements
@@ -216,4 +216,6 @@
 
        :config
        ;;literate
-       (default +bindings +smartparens))
+       (default +bindings
+                +gnupg
+                +smartparens))
