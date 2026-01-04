@@ -156,9 +156,7 @@
          corfu-quit-at-boundary 'separator
          corfu-auto-prefix 2
          corfu-quit-no-match 'separator
-         ;; cape-file-directory-must-exist t
          +corfu-want-tab-prefer-navigating-snippets nil
-         ;; +corfu-want-tab-prefer-navigating-org-tables t
          +corfu-want-minibuffer-completion nil
          corfu-preview-current 'insert
          corfu-auto-delay 0.2))
@@ -179,6 +177,7 @@
   ;; Disable auto-download of language servers (incompatible with NixOS)
   (setq! lsp-enable-suggest-server-download nil
          lsp-format-buffer-on-save t
+         lsp-signature-render-documentation nil
          lsp-signature-doc-lines 5
          ;; Performance tuning
          gc-cons-threshold 100000000              ; 100MB (reduces GC pauses)
