@@ -199,8 +199,13 @@ for more info.
 ** Lua configuration
 
 #+begin_src emacs-lisp
+;; lsp-mode specific (only runs if lsp-mode is active)
 (after! lsp-mode
   (setq lsp-clients-lua-language-server-bin (executable-find "lua-language-server")))
+
+;; eglot specific (only runs if eglot is active)
+(after! eglot
+  (set-eglot-client! 'lua-mode '("lua-language-server")))
 
 (add-hook! '(lua-mode-hook lua-ts-mode-hook)
   (setq-local corfu-auto-delay 0.2
@@ -320,7 +325,12 @@ for more info.
 
 ** LSP
 
-#+begin_src emacs-lisp
+*** lsp-mode Configuration (disabled)
+:PROPERTIES:
+:header-args: :tangle no
+:END:
+
+#+begin_src emacs-lisp :tangle no
 (after! lsp-mode
   ;; Disable auto-download of language servers (incompatible with NixOS)
   (setq! lsp-enable-suggest-server-download nil
@@ -332,6 +342,55 @@ for more info.
          read-process-output-max (* 1024 1024)    ; 1MB (faster LSP communication)
          lsp-idle-delay 0.500                      ; Delay before updating
          lsp-log-io nil))                          ; Disable IO logging
+#+end_src
+
+*** eglot Configuration (active)
+
+#+begin_src emacs-lisp
+(after! eglot
+  ;; Performance tuning (equivalent to lsp-mode settings)
+  (setq gc-cons-threshold 100000000              ; 100MB
+        read-process-output-max (* 1024 1024))   ; 1MB
+
+  ;; Disable events buffer (major performance improvement, like lsp-log-io nil)
+  (setq eglot-events-buffer-config '(:size 0))
+
+  (setq max-mini-window-height 1)
+  ;; ElDoc configuration (equivalent to lsp-signature-doc-lines)
+  (setq eldoc-echo-area-use-multiline-p nil))
+
+;; Format on save (equivalent to lsp-format-buffer-on-save t)
+;; Applied to all +lsp languages from init.el
+(defun +my/eglot-format-on-save-h ()
+  "Format buffer with eglot before saving."
+  (when (eglot-managed-p)
+    (eglot-format-buffer)))
+
+;; (add-hook! '(;; C/C++ (+lsp +tree-sitter)
+;;              c-mode-hook c++-mode-hook c-ts-mode-hook c++-ts-mode-hook
+;;              ;; Java (+lsp +tree-sitter)
+;;              java-mode-hook java-ts-mode-hook
+;;              ;; JavaScript (+lsp +tree-sitter)
+;;              js-mode-hook js-ts-mode-hook javascript-ts-mode-hook
+;;              ;; Lua (+lsp +tree-sitter)
+;;              lua-mode-hook lua-ts-mode-hook
+;;              ;; Nix (+lsp +tree-sitter)
+;;              nix-mode-hook nix-ts-mode-hook
+;;              ;; OCaml (+lsp)
+;;              tuareg-mode-hook
+;;              ;; Python (+lsp +tree-sitter +pyright)
+;;              python-mode-hook python-ts-mode-hook
+;;              ;; Rust (+lsp +tree-sitter)
+;;              rust-mode-hook rust-ts-mode-hook
+;;              ;; Shell (+lsp +tree-sitter)
+;;              sh-mode-hook bash-ts-mode-hook
+;;              ;; Web (+lsp +tree-sitter)
+;;              web-mode-hook
+;;              ;; YAML (+lsp +tree-sitter)
+;;              yaml-mode-hook yaml-ts-mode-hook
+;;              ;; Zig (+lsp +tree-sitter)
+;;              zig-mode-hook zig-ts-mode-hook)
+;;   (add-hook 'before-save-hook #'+my/eglot-format-on-save-h nil t))
 #+end_src
 
 ** Flycheck
@@ -619,7 +678,9 @@ for more info.
 (map! :leader
       (:prefix ("t" . "toggle")
        :desc "Toggle line numbers" "L" #'doom/toggle-line-numbers
-       :desc "Toggle lsp server"   "l" #'lsp-workspace-restart))
+       :desc "Restart LSP server"  "l" (cmd! (if (bound-and-true-p eglot--managed-mode)
+                                                  (eglot-reconnect (eglot-current-server))
+                                                (lsp-workspace-restart (lsp-workspaces))))))
 #+end_src
 
 ** Help Remaps
