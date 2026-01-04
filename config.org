@@ -451,8 +451,12 @@ for more info.
 ** Indent-Bars
 
 #+begin_src emacs-lisp
+(defun +my/indent-bars-enable-h ()
+  "Enable indent-bars-mode unless in a posframe or special buffer."
+  (unless (string-prefix-p " *" (buffer-name))
+    (indent-bars-mode 1)))
 (add-hook! (prog-mode text-mode conf-mode)
-  :append #'indent-bars-mode)
+  :append #'+my/indent-bars-enable-h)
 #+end_src
 
 ** Look and Feel
@@ -480,6 +484,7 @@ for more info.
 (set-face-attribute 'mode-line nil :font "Monospace")
 (map! :leader
       :desc "Load new theme" "H t" #'consult-theme)
+(setq max-mini-window-height 1)
 #+end_src
 
 ** Vterm
