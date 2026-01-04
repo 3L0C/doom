@@ -24,6 +24,7 @@
   - [[#corfu][Corfu]]
   - [[#cape][Cape]]
   - [[#lsp][LSP]]
+  - [[#flycheck][Flycheck]]
   - [[#org-roam][Org-Roam]]
   - [[#evil][Evil]]
   - [[#indent-bars][Indent-Bars]]
@@ -331,6 +332,13 @@ for more info.
          read-process-output-max (* 1024 1024)    ; 1MB (faster LSP communication)
          lsp-idle-delay 0.500                      ; Delay before updating
          lsp-log-io nil))                          ; Disable IO logging
+#+end_src
+
+** Flycheck
+
+#+begin_src emacs-lisp
+(after! flycheck
+  (setq flycheck-display-errors-delay 1.0))
 #+end_src
 
 ** Org-Roam
