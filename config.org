@@ -45,6 +45,7 @@
   - [[#quitsession][Quit/Session]]
   - [[#toggle][Toggle]]
   - [[#help-remaps][Help Remaps]]
+  - [[#man][Man]]
   - [[#disable-cursor-nudging-in-terminal-buffers][Disable cursor nudging in terminal buffers]]
   - [[#advice][Advice]]
   - [[#debugger][Debugger]]
@@ -729,6 +730,13 @@ for more info.
       "v" #'helpful-variable
       "F" #'helpful-callable
       "K" #'helpful-key)
+#+end_src
+
+** Man
+
+#+begin_src emacs-lisp
+(map! :leader
+      "o m" #'man)
 #+end_src
 
 ** Disable cursor nudging in terminal buffers
