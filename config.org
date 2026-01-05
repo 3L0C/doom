@@ -32,6 +32,7 @@
   - [[#look-and-feel][Look and Feel]]
   - [[#vterm][Vterm]]
   - [[#leader-key][Leader key]]
+  - [[#popups][Popups]]
   - [[#buffers][Buffers]]
   - [[#ibuffer][Ibuffer]]
   - [[#dired-and-dirvish][Dired and Dirvish]]
@@ -520,6 +521,28 @@ for more info.
        doom-leader-alt-key "M-,"
        doom-localleader-key "SPC"
        doom-localleader-alt-key "M-SPC")
+#+end_src
+
+** Popups
+
+#+begin_src emacs-lisp
+;; (set-popup-rule! "^\\*\\(?:[Cc]ompil\\(?:ation\\|e-Log\\)\\)" :ignore t :select t)
+(map! :leader
+      (:prefix ("w" . "window")
+       "p" nil
+       (:prefix ("p" . "popup")
+        "o" #'+popup/other
+        "t" #'+popup/toggle
+        "c" #'+popup/close
+        "C" #'+popup/close-all
+        "R" #'+popup/restore
+        "r" #'+popup/raise)))
+(set-popup-rule! "^\\*\\(?:[Cc]ompil\\(?:ation\\|e-Log\\)\\)"
+  :side 'bottom
+  :size 0.3
+  :vslot -2
+  :quit t
+  :select t)
 #+end_src
 
 ** Buffers
