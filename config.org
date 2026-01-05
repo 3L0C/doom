@@ -18,6 +18,7 @@
   - [[#nix-configuration][Nix configuration]]
   - [[#lua-configuration][Lua configuration]]
   - [[#ocaml-configuration][OCaml configuration]]
+  - [[#compilation][Compilation]]
   - [[#spell-fu][Spell-Fu]]
   - [[#yaml][YAML]]
   - [[#tramp][TRAMP]]
@@ -257,6 +258,15 @@ for more info.
     (sp-local-pair "(*" nil :actions nil)))
 (setq! +doom-dashboard-pwd-policy "~/"
        fancy-splash-image "~/.config/doom/doom-emacs-dash.png")
+#+end_src
+
+** Compilation
+
+#+begin_src emacs-lisp
+(add-hook! compilation-start-hook
+  (defun +my/compilation-start-select (proc)
+    (when-let ((win (get-buffer-window (process-buffer proc))))
+      (select-window win))))
 #+end_src
 
 ** Spell-Fu
