@@ -364,46 +364,15 @@ for more info.
   ;; Performance tuning (equivalent to lsp-mode settings)
   (setq gc-cons-threshold 100000000              ; 100MB
         read-process-output-max (* 1024 1024))   ; 1MB
-
   ;; Disable events buffer (major performance improvement, like lsp-log-io nil)
   (setq eglot-events-buffer-config '(:size 0))
-
-  (setq max-mini-window-height 1)
   ;; ElDoc configuration (equivalent to lsp-signature-doc-lines)
   (setq eldoc-echo-area-use-multiline-p nil))
-
-;; Format on save (equivalent to lsp-format-buffer-on-save t)
-;; Applied to all +lsp languages from init.el
-(defun +my/eglot-format-on-save-h ()
-  "Format buffer with eglot before saving."
-  (when (eglot-managed-p)
-    (eglot-format-buffer)))
-
-;; (add-hook! '(;; C/C++ (+lsp +tree-sitter)
-;;              c-mode-hook c++-mode-hook c-ts-mode-hook c++-ts-mode-hook
-;;              ;; Java (+lsp +tree-sitter)
-;;              java-mode-hook java-ts-mode-hook
-;;              ;; JavaScript (+lsp +tree-sitter)
-;;              js-mode-hook js-ts-mode-hook javascript-ts-mode-hook
-;;              ;; Lua (+lsp +tree-sitter)
-;;              lua-mode-hook lua-ts-mode-hook
-;;              ;; Nix (+lsp +tree-sitter)
-;;              nix-mode-hook nix-ts-mode-hook
-;;              ;; OCaml (+lsp)
-;;              tuareg-mode-hook
-;;              ;; Python (+lsp +tree-sitter +pyright)
-;;              python-mode-hook python-ts-mode-hook
-;;              ;; Rust (+lsp +tree-sitter)
-;;              rust-mode-hook rust-ts-mode-hook
-;;              ;; Shell (+lsp +tree-sitter)
-;;              sh-mode-hook bash-ts-mode-hook
-;;              ;; Web (+lsp +tree-sitter)
-;;              web-mode-hook
-;;              ;; YAML (+lsp +tree-sitter)
-;;              yaml-mode-hook yaml-ts-mode-hook
-;;              ;; Zig (+lsp +tree-sitter)
-;;              zig-mode-hook zig-ts-mode-hook)
-;;   (add-hook 'before-save-hook #'+my/eglot-format-on-save-h nil t))
+(after! eglot
+  (setq eglot-ignored-server-capabilities '(:documentOnTypeFormattingProvider)))
+(add-hook! 'eglot-managed-mode-hook
+  (add-hook! 'before-save-hook :local
+             #'eglot-format-buffer))
 #+end_src
 
 ** Flycheck
@@ -992,22 +961,22 @@ while keeping space insertion and other smartparens features (comment
 pairing, quote pairing, wrapping, navigation).
 
 #+begin_src emacs-lisp
-(defun +my/fix-smartparens-braces-h ()
-  "Fix smartparens brace post-handlers for current tree-sitter mode."
-  (dolist (brace '("{" "[" "("))
-    (sp-local-pair major-mode brace nil :post-handlers '(("| " "SPC")))))
-(add-hook! '(c-ts-mode-hook
-             c++-ts-mode-hook
-             java-ts-mode-hook
-             js-ts-mode-hook
-             rust-ts-mode-hook
-             zig-ts-mode-hook
-             python-ts-mode-hook
-             bash-ts-mode-hook
-             ;; lua-ts-mode-hook
-             nix-ts-mode-hook
-             yaml-ts-mode-hook)
-           :append #'+my/fix-smartparens-braces-h)
+;; (defun +my/fix-smartparens-braces-h ()
+;;   "Fix smartparens brace post-handlers for current tree-sitter mode."
+;;   (dolist (brace '("{" "[" "("))
+;;     (sp-local-pair major-mode brace nil :post-handlers '(("| " "SPC")))))
+;; (add-hook! '(c-ts-mode-hook
+;;              c++-ts-mode-hook
+;;              java-ts-mode-hook
+;;              js-ts-mode-hook
+;;              rust-ts-mode-hook
+;;              zig-ts-mode-hook
+;;              python-ts-mode-hook
+;;              bash-ts-mode-hook
+;;              ;; lua-ts-mode-hook
+;;              nix-ts-mode-hook
+;;              yaml-ts-mode-hook)
+;;            :append #'+my/fix-smartparens-braces-h)
 #+end_src
 
 ** Misc.
