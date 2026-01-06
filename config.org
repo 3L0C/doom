@@ -983,6 +983,33 @@ Uses scroll-conservatively 101 to scroll one line at a time."
                              (vertical-scroll-bars . nil)))
 #+end_src
 
+*** Smartparens post-handlers for tree-sitter modes
+
+Smartparens' default post-handlers for ={= add extra blank lines in
+tree-sitter modes because treesit-indent uses different indentation
+logic than traditional CC Mode. This removes the RET post-handler
+while keeping space insertion and other smartparens features (comment
+pairing, quote pairing, wrapping, navigation).
+
+#+begin_src emacs-lisp
+(defun +my/fix-smartparens-braces-h ()
+  "Fix smartparens brace post-handlers for current tree-sitter mode."
+  (dolist (brace '("{" "[" "("))
+    (sp-local-pair major-mode brace nil :post-handlers '(("| " "SPC")))))
+(add-hook! '(c-ts-mode-hook
+             c++-ts-mode-hook
+             java-ts-mode-hook
+             js-ts-mode-hook
+             rust-ts-mode-hook
+             zig-ts-mode-hook
+             python-ts-mode-hook
+             bash-ts-mode-hook
+             ;; lua-ts-mode-hook
+             nix-ts-mode-hook
+             yaml-ts-mode-hook)
+           :append #'+my/fix-smartparens-braces-h)
+#+end_src
+
 ** Misc.
 
 #+begin_src emacs-lisp
