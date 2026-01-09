@@ -580,9 +580,9 @@ for more info.
   (kbd "j") 'peep-dired-next-file
   (kbd "k") 'peep-dired-prev-file)
 (add-hook! 'peep-dired-hook #'evil-normalize-keymaps)
-(map! :after dirvish
-      :map dirvish-mode-map
-      :n "l" #'dired-find-alternate-file)
+(after! (:or dirvish dired)
+  (map! :map (dirvish-mode-map dired-mode-map)
+        :n "l" #'dired-find-alternate-file))
 #+end_src
 
 ** Registers
