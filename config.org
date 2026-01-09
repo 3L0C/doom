@@ -12,6 +12,7 @@
   - [[#centered-cursor-mode][Centered Cursor Mode]]
   - [[#wks-mode][WKS Mode]]
   - [[#avy][Avy]]
+  - [[#switch-window][Switch Window]]
 - [[#settings][Settings]]
   - [[#auto-revert][Auto revert]]
   - [[#cc-configuration][C/C++ configuration]]
@@ -165,6 +166,19 @@ local leader. Now on with the show!
 #+begin_src emacs-lisp
 (after! avy
   (setq! avy-keys '(?a ?r ?s ?t ?n ?e ?i ?o ?g ?m)))
+#+end_src
+
+** Switch Window
+
+#+begin_src emacs-lisp
+(map! :leader
+      "s w" #'switch-window)
+(after! switch-window
+  (setq! switch-window-qwerty-shortcuts
+         '("a" "r" "s" "t"
+           "n" "e" "i" "o"
+           "g" "m" "x" "c"
+           "d" "." "," "h")))
 #+end_src
 
 * Settings
