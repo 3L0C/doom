@@ -11,6 +11,7 @@
   - [[#zen][Zen]]
   - [[#centered-cursor-mode][Centered Cursor Mode]]
   - [[#wks-mode][WKS Mode]]
+  - [[#efm-mode][EFM Mode]]
   - [[#avy][Avy]]
   - [[#switch-window][Switch Window]]
 - [[#settings][Settings]]
@@ -159,6 +160,22 @@ local leader. Now on with the show!
 #+begin_src emacs-lisp
 (after! wks-mode
   (sp-local-pair 'wks-mode "<" ">"))
+#+end_src
+
+** EFM Mode
+
+Emacs File Manager - use Emacs as a standalone file manager with dirvish/dired.
+
+#+begin_src emacs-lisp
+(use-package! efm-mode
+  :commands (efm efm-mode efm-save-and-return efm-return efm-dired-find-file-other-frame)
+  :config
+  ;; Evil keybindings for EFM
+  (map! :n "Z Z" #'efm-save-and-return
+        :n "Z Q" #'efm-return)
+  ;; Dired keybinding for opening in other frame (files only, dirs stay in same frame)
+  (map! :map dired-mode-map
+        :n "O" #'efm-dired-find-file-other-frame))
 #+end_src
 
 ** Avy
@@ -583,80 +600,8 @@ for more info.
 (after! (:or dirvish dired)
   (map! :map (dirvish-mode-map dired-mode-map)
         :n "l" #'dired-find-alternate-file))
-
 ;; Preserve symlink paths - don't resolve to truenames
 (setq find-file-visit-truename nil)
-#+end_src
-
-*** File Manager Mode
-
-Launch Emacs as a standalone file manager with =EMACS_FM_MODE=1 emacs -e '(dirvish ".")'=.
-In this mode:
-- Quitting dirvish (~q~) closes the entire frame
-- Closing a file (~ZZ~/~ZQ~) returns to dirvish at that file's directory
-- ~O~ opens files in a separate independent frame (normal Emacs behavior)
-
-Shell wrapper function (add to your shell config):
-#+begin_src bash :tangle no
-emfm() {
-    EMACS_FM_MODE=1 emacs --eval "(dirvish \"${1:-.}\")" &
-}
-#+end_src
-
-#+begin_src emacs-lisp
-(defvar cb/file-manager-mode (getenv "EMACS_FM_MODE")
-  "When non-nil, Emacs runs in standalone file-manager mode.
-Set via EMACS_FM_MODE=1 environment variable before launching Emacs.")
-
-(when cb/file-manager-mode
-  ;; Tag frame as file-manager frame when dired opens
-  (defun cb/fm-tag-frame-h ()
-    "Tag the current frame as a file-manager frame (runs once)."
-    (unless (frame-parameter nil 'cb/fm-frame)
-      (set-frame-parameter nil 'cb/fm-frame t)))
-  (add-hook 'dired-mode-hook #'cb/fm-tag-frame-h)
-
-  ;; Quit dirvish → delete the file-manager frame (or exit if sole frame)
-  (defadvice! cb/fm-quit-delete-frame-a (&rest _)
-    :after #'dirvish-quit
-    (when (frame-parameter nil 'cb/fm-frame)
-      (if (> (length (frame-list)) 1)
-          (delete-frame)
-        (save-buffers-kill-emacs))))
-
-  (defun cb/fm-save-and-return-to-dirvish ()
-    "Save buffer, kill it, and return to dirvish at file's directory.
-In non-FM frames, falls back to `doom/save-and-kill-buffer'."
-    (interactive)
-    (if (not (frame-parameter nil 'cb/fm-frame))
-        (doom/save-and-kill-buffer)
-      (let ((dir (if buffer-file-name
-                     (file-name-directory buffer-file-name)
-                   default-directory)))
-        (when (and buffer-file-name (buffer-modified-p))
-          (save-buffer))
-        (kill-current-buffer)
-        (dirvish dir))))
-
-  (defun cb/fm-return-to-dirvish ()
-    "Kill buffer (prompting if modified) and return to dirvish at file's directory.
-In non-FM frames, falls back to `kill-current-buffer'."
-    (interactive)
-    (if (not (frame-parameter nil 'cb/fm-frame))
-        (kill-current-buffer)
-      (let ((dir (if buffer-file-name
-                     (file-name-directory buffer-file-name)
-                   default-directory)))
-        (kill-current-buffer)
-        (dirvish dir))))
-
-  ;; Keybindings
-  (map! :after dired
-        :map dired-mode-map
-        :n "O" #'find-file-other-frame)
-
-  (map! :n "Z Z" #'cb/fm-save-and-return-to-dirvish
-        :n "Z Q" #'cb/fm-return-to-dirvish))
 #+end_src
 
 ** Registers

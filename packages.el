@@ -61,6 +61,8 @@
 (package! wks-mode
   :recipe (:local-repo "packages/wks-mode"
            :build (:not compile)))
+(package! efm-mode
+  :recipe (:local-repo "packages/efm-mode"))
 (package! meson-mode
   :recipe (:host github
            :repo "wentasah/meson-mode"))
