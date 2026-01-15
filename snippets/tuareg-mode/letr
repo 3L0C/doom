@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: letr
+# uuid: letr
+# key: letr
+# condition: t
+# --
+let rec $1 = $0

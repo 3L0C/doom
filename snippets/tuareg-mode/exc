@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: exc
+# uuid: exc
+# key: exc
+# condition: t
+# --
+exception $1 of $0

@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: let
+# uuid: let
+# key: let
+# condition: t
+# --
+let $1 = $0

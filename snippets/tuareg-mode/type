@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: type
+# uuid: type
+# key: type
+# condition: t
+# --
+type $1 = $0

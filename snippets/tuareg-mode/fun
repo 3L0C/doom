@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: fun
+# uuid: fun
+# key: fun
+# condition: t
+# --
+(fun $1 -> $0)

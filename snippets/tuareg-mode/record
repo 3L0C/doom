@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: record
+# uuid: record
+# key: record
+# condition: t
+# --
+type $1 = {
+  $0
+}

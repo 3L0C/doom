@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: variant
+# uuid: variant
+# key: variant
+# condition: t
+# --
+type $1 =
+  | $0

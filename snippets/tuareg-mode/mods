@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: mods
+# uuid: mods
+# key: mods
+# condition: t
+# --
+module $1 = struct
+  $0
+end

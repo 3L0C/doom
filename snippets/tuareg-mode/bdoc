@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: bdoc
+# uuid: bdoc
+# key: bdoc
+# condition: t
+# --
+(** $0 *)

@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: bcom
+# uuid: bcom
+# key: bcom
+# condition: t
+# --
+(* $0 *)

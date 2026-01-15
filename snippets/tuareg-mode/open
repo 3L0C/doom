@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: open
+# uuid: open
+# key: open
+# condition: t
+# --
+open $0

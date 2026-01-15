@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: modtype
+# uuid: modtype
+# key: modtype
+# condition: t
+# --
+module type $1 = sig
+  $0
+end

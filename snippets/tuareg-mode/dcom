@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: dcom
+# uuid: dcom
+# key: dcom
+# condition: t
+# --
+(** $0 *)

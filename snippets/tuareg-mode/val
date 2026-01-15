@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: val
+# uuid: val
+# key: val
+# condition: t
+# --
+val $1 : $0
