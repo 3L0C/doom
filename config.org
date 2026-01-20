@@ -158,8 +158,10 @@ local leader. Now on with the show!
 ** WKS Mode
 
 #+begin_src emacs-lisp
-(after! wks-mode
-  (sp-local-pair 'wks-mode "<" ">"))
+(use-package! wks-mode
+  :config
+  (after! wks-mode
+    (sp-local-pair 'wks-mode "<" ">")))
 #+end_src
 
 ** EFM Mode

@@ -59,8 +59,8 @@
            :repo "kmonad/kbd-mode"))
 (package! pacfiles-mode)
 (package! wks-mode
-  :recipe (:local-repo "packages/wks-mode"
-           :build (:not compile)))
+  :recipe (:host github
+           :repo "3L0C/wks-mode"))
 (package! efm-mode
   :recipe (:local-repo "packages/efm-mode"))
 (package! meson-mode
